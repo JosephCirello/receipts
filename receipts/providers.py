@@ -61,17 +61,17 @@ def load_env_file() -> None:
     if _LOADED:
         return
     _LOADED = True
-    p = os.environ.get("RECEIPTS_ENV_FILE") or str(Path(__file__).resolve().parent.parent / ".env")
-    if not Path(p).exists():
-        return
-    for line in Path(p).read_text(encoding="utf-8", errors="ignore").splitlines():
-        line = line.strip()
-        if not line or line.startswith("#") or "=" not in line:
-            continue
-        k, v = line.split("=", 1)
-        k, v = k.strip(), v.strip().strip('"').strip("'")
-        if k and v and not os.environ.get(k):
-            os.environ[k] = v
+    p = Path(os.environ.get("RECEIPTS_ENV_FILE") or str(Path(__file__).resolve().parent.parent / ".env"))
+    if p.exists():
+        for line in p.read_text(encoding="utf-8", errors="ignore").splitlines():
+            line = line.strip()
+            if not line or line.startswith("#") or "=" not in line:
+                continue
+            k, v = line.split("=", 1)
+            k, v = k.strip(), v.strip().strip('"').strip("'")
+            if k and v and not os.environ.get(k):
+                os.environ[k] = v
+    # the Vultr key file is read whether or not an env file exists (it was behind the env-file check once; measured 2026-11-09)
     keyfile = Path(os.environ.get("RECEIPTS_KEYFILE", str(Path.home() / ".vultr_inference_key")))
     if keyfile.exists() and not os.environ.get("VULTR_INFERENCE_KEY"):
         os.environ["VULTR_INFERENCE_KEY"] = keyfile.read_text(encoding="utf-8").strip()

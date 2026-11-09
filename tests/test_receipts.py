@@ -316,3 +316,16 @@ def test_owner_can_switch_the_in_flight_hold_off():
     res = r.call("create_payout", {"vendor": "Blue Ridge Finishes", "receiver_email": "orders@blueridgefinishes.com",
                                    "amount": 1836, "invoice_number": "INV-BR-1197"})
     assert res["batch_status"] == "SUCCESS"
+
+
+def test_vultr_key_file_is_read_even_without_an_env_file(tmp_path, monkeypatch):
+    from receipts import providers
+    kf = tmp_path / "vultr.key"
+    kf.write_text("file-key\n", encoding="utf-8")
+    monkeypatch.setenv("RECEIPTS_KEYFILE", str(kf))
+    monkeypatch.setenv("RECEIPTS_ENV_FILE", str(tmp_path / "does-not-exist.env"))
+    monkeypatch.delenv("VULTR_INFERENCE_KEY", raising=False)
+    providers._LOADED = False
+    assert providers.key_for("vultr") == "file-key"
+    monkeypatch.delenv("VULTR_INFERENCE_KEY", raising=False)
+    providers._LOADED = False
