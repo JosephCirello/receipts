@@ -90,20 +90,12 @@
    "caption": "Receipts off: 9.4% of every dollar sent should never have left ($79,544). Receipts on: $0.00, 97% of honest payments untouched."
   },
   {
-   "id": "how",
-   "visual": {
-    "slide": "how"
-   },
-   "say": "Under the hood, the agent's PayPal tools run through PayPal's official MCP server and the Payouts API. Receipts sits in between, and decides in plain code from PayPal's own records.",
-   "caption": "The agent's PayPal tools run through PayPal's MCP server and Payouts API. Receipts sits in between."
-  },
-  {
    "id": "rules",
    "visual": {
     "take": "rules"
    },
-   "say": "The owner writes her rules in her own words. AI turns them into exact limits she can see. Then plain code enforces them. The AI never decides a payment.",
-   "caption": "AI drafts the rules from her words. Code enforces them. AI never decides a payment."
+   "say": "Maya doesn't write code. She writes her rules the way she'd tell a new hire: never pay a bill twice; call before you change where a supplier gets paid. Receipts turns that into rules it enforces, and shows her what it understood.",
+   "caption": "Maya writes her rules in plain English. Receipts enforces them, and shows her what it understood."
   },
   {
    "id": "claims",
@@ -111,8 +103,8 @@
     "take": "claims",
     "start": 1.4
    },
-   "say": "Receipts also reads the agent's words. Here, an agent obeyed an instruction hidden in a customer's email, and wrote, per owner's instruction. There is no approval on file, so the refund never reaches PayPal.",
-   "caption": "The agent claimed the owner's instruction. None on file. Blocked before PayPal."
+   "say": "It also listens to what the agent says. Here, an agent wrote, per owner's instruction, on a refund. Maya never gave one. So the money never moved.",
+   "caption": "The agent wrote \"per owner's instruction\". Maya never gave one. The money never moved."
   },
   {
    "id": "report",
@@ -120,24 +112,24 @@
     "take": "report",
     "start": 1.4
    },
-   "say": "And at the end of the day, it checks the agent's own report against PayPal. On a normal Tuesday, this agent reported three supplier payments. PayPal shows two.",
-   "caption": "The report said three payments. PayPal shows two."
-  },
-  {
-   "id": "mcp",
-   "visual": {
-    "take": "mcp_term"
-   },
-   "say": "Receipts speaks MCP. Point any agent at Receipts instead of at PayPal's server: the same tool names, every money move checked first.",
-   "caption": "A drop-in MCP server in front of PayPal's own tools."
+   "say": "At the end of the day, it checks the agent's homework. The agent said it made three payments. PayPal shows two.",
+   "caption": "The agent's report said three payments. PayPal shows two."
   },
   {
    "id": "ledger",
    "visual": {
     "take": "ledger"
    },
-   "say": "Every decision, with its reason, in one ledger.",
-   "caption": "Every decision, with its reason, in one ledger."
+   "say": "Every decision, in one list, with the reason in plain words.",
+   "caption": "Every decision, in one list, with the reason in plain words."
+  },
+  {
+   "id": "how",
+   "visual": {
+    "slide": "how"
+   },
+   "say": "One line for the engineers: Receipts runs on PayPal's own tools, its MCP server and Payouts API, and it plugs into any AI agent with one line in a settings file.",
+   "caption": "For the engineers: built on PayPal's MCP server and Payouts API; plugs into any agent with one line."
   },
   {
    "id": "close",
