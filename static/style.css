@@ -215,3 +215,31 @@ textarea { width: 100%; height: 360px; resize: vertical; padding: 14px; border-r
 .ag-theme-quartz .r-BLOCK { box-shadow: inset 4px 0 0 var(--bad); }
 .ag-theme-quartz .r-HOLD { box-shadow: inset 4px 0 0 var(--hold); }
 .ag-theme-quartz .r-ALLOW { box-shadow: inset 4px 0 0 var(--ok); }
+
+/* ---- results: hero, cost-against-harm chart ---- */
+:root { --viz-1: #2a78d6; --viz-grid: #e1e0d9; --viz-axis: #c3c2b7; --viz-muted: #898781; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --viz-1: #3987e5; --viz-grid: #2c2c2a; --viz-axis: #383835; --viz-muted: #898781; } }
+:root[data-theme="dark"] { --viz-1: #3987e5; --viz-grid: #2c2c2a; --viz-axis: #383835; --viz-muted: #898781; }
+.hero-pct { display: flex; align-items: center; gap: 28px; background: var(--bad-bg, #fdecec); border: 2px solid var(--bad); border-radius: var(--radius); padding: 16px 26px; margin: 12px 0 14px; }
+.hero-pct .pct { font: 900 84px/0.95 Inter; letter-spacing: -.05em; color: var(--bad); }
+.hero-pct .what { font-size: 22px; line-height: 1.2; font-weight: 600; letter-spacing: -.01em; }
+.hero-pct .what b { color: var(--bad); font-weight: 900; }
+.hero-pct .what small { display: block; font-size: 13.5px; font-weight: 500; color: var(--ink-2); margin-top: 8px; letter-spacing: 0; }
+.viz-card { margin: 6px 0 18px; }
+.viz-card h3, h3.sub { font-size: 16px; margin: 0 0 8px; letter-spacing: -.01em; }
+h3.sub { margin-top: 20px; }
+.viz-root { position: relative; width: 100%; max-width: 1060px; }
+.viz-root svg { width: 100%; height: auto; display: block; font-family: Inter, system-ui, sans-serif; }
+.viz-root .grid { stroke: var(--viz-grid); stroke-width: 1; }
+.viz-root .axis { stroke: var(--viz-axis); stroke-width: 1.5; }
+.viz-root .zero { stroke: var(--ok); stroke-width: 2; stroke-dasharray: 6 5; }
+.viz-root .zero-l { fill: var(--ok); font-size: 13px; font-weight: 700; }
+.viz-root .tick { fill: var(--viz-muted); font-size: 12px; font-variant-numeric: tabular-nums; }
+.viz-root .axis-l { fill: var(--ink-2); font-size: 13px; font-weight: 600; }
+.viz-root .mark { fill: var(--viz-1); stroke: var(--card); stroke-width: 2; }
+.viz-root .hit { fill: transparent; cursor: pointer; }
+.viz-root .dot:hover .mark { r: 8; }
+.viz-root .dl { fill: var(--ink); font-size: 12.5px; font-weight: 600; }
+.viz-root .tip { position: absolute; z-index: 5; background: var(--card); color: var(--ink); border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; font-size: 13px; line-height: 1.45; box-shadow: var(--shadow); max-width: 330px; pointer-events: none; }
+#dayGrid { height: 560px; margin-top: 12px; }
+@media (max-width: 900px) { .hero-pct { flex-direction: column; align-items: flex-start; gap: 8px; } .hero-pct .pct { font-size: 60px; } }

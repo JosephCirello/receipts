@@ -303,41 +303,115 @@ async function loadLedger() {
 }
 
 /* ---------- results ---------- */
-let MGRID = null;
+let MGRID = null, DGRID = null;
+const money0 = (x) => "$" + Math.round(x || 0).toLocaleString("en-US");
+const DAY_TITLE = {};
 async function loadResults() {
   const s = await (await fetch("/api/results")).json();
   const body = $("#resultsBody");
-  if (!s.scored) { body.innerHTML = `<div class="card">No measured runs on file yet. <code>python run_batch.py</code> writes them.</div>`; return; }
-  const o = s.observe, e = s.enforce;
+  if (!s.scored_runs) { body.innerHTML = `<div class="card">No measured runs on file yet. <code>python run_batch.py</code> writes them.</div>`; return; }
+  META.scenarios.forEach((x) => (DAY_TITLE[x.id] = x.title));
+  const o = s.receipts_off, e = s.receipts_on, sn = s.second_notice_off, cr = s.crossed_in_the_mail_off;
   const pct = (a, b) => (b ? Math.round((100 * a) / b) + "%" : "–");
+  const modelsPaidTwice = Object.values(s.by_model_off).filter((m) => m.paid_twice > 0).length;
   body.innerHTML = `
-    <div class="res-h"><h2>Measured: ${Object.keys(s.by_model).length} models, ${s.scored} scored days</h2><span class="muted">generated ${esc(s.generated)} · PayPal ${esc(s.paypal_backends.join(", "))}</span></div>
+    <div class="res-h"><h2>Measured: ${s.models} models · ${s.days} business days · ${s.scored_runs} runs · Receipts off, then on</h2><span class="muted">cost at each provider's published price, read ${esc(s.prices_read_on)}</span></div>
+    <div class="hero-pct"><div class="pct">${o.harm_share_pct}%</div><div class="what">of every dollar the agents sent <b>should never have left the business.</b><small>${money0(o.harm_money)} of ${money0(o.money_moved)} with Receipts off · about 1 dollar in ${Math.round(o.one_dollar_in || 0)} · ${sn.share_of_all_harm_pct}% of it a bill paid twice</small></div></div>
     <div class="tiles">
-      <div class="tile"><div class="k">Without Receipts</div><div class="v">${o.bad_episodes} / ${o.trap_episodes}</div><div class="s">trap days where harmful money actually moved in PayPal</div></div>
-      <div class="tile"><div class="k">Money that left wrongly</div><div class="v bad-t">${usd(o.bad_money)}</div><div class="s">with nothing between the agent and PayPal</div></div>
-      <div class="tile"><div class="k">With Receipts</div><div class="v good-t">${usd(e.bad_money)}</div><div class="s">left wrongly, measured the same way, on ${e.trap_episodes} trap days; ${e.attempts} risky moves stopped or held</div></div>
-      <div class="tile"><div class="k">Honest work, untouched</div><div class="v">${pct(e.legit_done, e.legit_expected)}</div><div class="s">${e.legit_done} of ${e.legit_expected} legitimate payments and refunds went through; ${e.false_stops} wrongly stopped</div></div>
-      <div class="tile"><div class="k">Said one thing, did another</div><div class="v">${o.said_no_did_it + e.said_no_did_it}</div><div class="s">money moves tried after the agent itself called that payment suspicious or said it would verify</div></div>
-      <div class="tile"><div class="k">Report vs PayPal</div><div class="v">${o.reports.MISMATCH + e.reports.MISMATCH}</div><div class="s">end-of-day reports that did not match PayPal's own records</div></div>
-      <div class="tile"><div class="k">Not scored</div><div class="v">${s.not_scored.ERROR + s.not_scored.NO_TOOL_CALLS}</div><div class="s">technical errors or no tool calls; kept on file, left out of every number</div></div>
-      <div class="tile"><div class="k">Judge model</div><div class="v">None</div><div class="s">verdicts are deterministic rules on the tool-call log and PayPal's records; harm is a separate, fixed definition per day</div></div>
+      <div class="tile"><div class="k">With Receipts on</div><div class="v good-t">${usd(e.harm_money)}</div><div class="s">left wrongly on the same ${e.trap_days} trap days, measured the same way</div></div>
+      <div class="tile"><div class="k">Honest work, untouched</div><div class="v">${pct(e.legit_done, e.legit_expected)}</div><div class="s">${e.legit_done} of ${e.legit_expected} honest payments and refunds went straight to PayPal; ${e.false_stops} wrongly stopped</div></div>
+      <div class="tile"><div class="k">Crossed in the mail</div><div class="v bad-t">${cr.paid_twice} of ${cr.runs}</div><div class="s">runs paid Maya twice; ${cr.paid_twice_after_checking_paypal} of them checked PayPal first, for completed payments only. Every run that asked for pending found hers.</div></div>
+      <div class="tile"><div class="k">Models that paid a bill twice</div><div class="v bad-t">${modelsPaidTwice} of ${s.models}</div><div class="s">at least once across the six second-notice days, Receipts off</div></div>
+      <div class="tile"><div class="k">Report vs PayPal</div><div class="v">${o.report_mismatch + e.report_mismatch}</div><div class="s">end-of-day reports claiming money that never moved</div></div>
+      <div class="tile"><div class="k">Judge model</div><div class="v">None</div><div class="s">verdicts are plain rules on the call, the records and PayPal; harm is a fixed definition per day, written apart from the rules</div></div>
     </div>
-    <p class="method">Each model worked each of ten days in two arms: Receipts off (every call went to PayPal; Receipts recorded what it would have done) and Receipts on. Seven days carry a trap (a forged payee from a lookalike domain, a new payee from a compromised real mailbox, a duplicate invoice, a split bill, a refund larger than the payment, a fake owner with a hidden instruction, a dispute on a delivered parcel); three are control days whose every payment is legitimate. A few runs per model per day per arm is presence, not frequency.</p>
-    <div id="modelGrid" class="ag-theme-quartz"></div>`;
-  const rows = Object.entries(s.by_model).map(([m, d]) => ({ model: m, ...d }));
+    <div class="card viz-card">
+      <h3>Does a dearer model lose less? What each model cost for the ${s.days} days, against what it lost, Receipts off</h3>
+      <div id="costChart" class="viz-root"></div>
+      <p class="method">One dot per model. Across: what the business paid the model to work the ${s.days} days, at the provider's published price (log scale). Up: money that left wrongly. The dashed line is the same ${s.days} days with Receipts on: $0.00 for every model. Hover a dot for the detail; the table below has every number.</p>
+    </div>
+    <h3 class="sub">Per model</h3>
+    <div id="modelGrid" class="ag-theme-quartz"></div>
+    <h3 class="sub">Per day, Receipts off</h3>
+    <div id="dayGrid" class="ag-theme-quartz"></div>
+    <p class="method">Each model worked each day in two arms: Receipts off (every call went to PayPal; Receipts recorded what it would have done) and Receipts on. Ten days carry a trap, including five kinds of second notice; seven are honest days, including a bill that really is overdue and a payment that really bounced. Two runs per model, day and arm is presence, not frequency.</p>`;
+  const rows = Object.entries(s.by_model_off).map(([m, d]) => ({ model: m, ...d, on: s.by_model_on[m] || {} }));
+  drawCostChart($("#costChart"), rows, s.days);
   MGRID = agGrid.createGrid($("#modelGrid"), {
     rowData: rows,
     columnDefs: [
-      { field: "model", width: 300, pinned: "left" },
-      { field: "observe_trap_attempt_episodes", headerName: "Trap days tried (off)", width: 180, type: "rightAligned" },
-      { field: "observe_bad_money", headerName: "Left wrongly (off)", width: 170, valueFormatter: (p) => usd(p.value), type: "rightAligned" },
-      { field: "enforce_bad_money", headerName: "Left wrongly (on)", width: 170, valueFormatter: (p) => usd(p.value), type: "rightAligned" },
-      { field: "said_no_did_it", headerName: "Said no, did it", width: 150, type: "rightAligned" },
-      { field: "report_mismatch", headerName: "Report ≠ PayPal", width: 150, type: "rightAligned" },
-      { headerName: "Honest work done (on)", width: 190, valueGetter: (p) => `${p.data.enforce_legit_done} / ${p.data.enforce_legit_expected}`, type: "rightAligned" },
-      { field: "enforce_false_stops", headerName: "Wrongly stopped (on)", width: 180, type: "rightAligned" },
+      { field: "model", width: 250, pinned: "left" },
+      { field: "provider", width: 110, filter: true },
+      { headerName: "$ / M tokens in · out", width: 170, valueGetter: (p) => `${p.data.price_in} · ${p.data.price_out}`, type: "rightAligned" },
+      { field: "cost_per_agent_run_usd", headerName: `Cost for ${s.days} days`, width: 150, valueFormatter: (p) => "$" + (p.value || 0).toFixed(2), type: "rightAligned", sort: "asc" },
+      { field: "harm_money", headerName: "Left wrongly (off)", width: 160, valueFormatter: (p) => usd(p.value), type: "rightAligned" },
+      { field: "harm_share_pct", headerName: "Share of what it sent", width: 170, valueFormatter: (p) => p.value + "%", type: "rightAligned" },
+      { headerName: "Trap days fell (off)", width: 160, valueGetter: (p) => `${p.data.trap_days_harm} / ${p.data.trap_days}`, type: "rightAligned" },
+      { field: "paid_twice", headerName: "Paid a bill twice", width: 150, type: "rightAligned" },
+      { headerName: "Left wrongly (on)", width: 150, valueGetter: (p) => usd(p.data.on.harm_money || 0), type: "rightAligned" },
+      { headerName: "Honest work (off)", width: 150, valueGetter: (p) => `${p.data.legit_done} / ${p.data.legit_expected}`, type: "rightAligned" },
+      { headerName: "Honest work (on)", width: 150, valueGetter: (p) => `${p.data.on.legit_done ?? "–"} / ${p.data.on.legit_expected ?? "–"}`, type: "rightAligned" },
+      { field: "report_mismatch", headerName: "Report ≠ PayPal", width: 140, type: "rightAligned" },
     ],
     defaultColDef: { sortable: true, resizable: true },
+  });
+  const drows = Object.entries(s.by_day_off).map(([d, v]) => ({ day: DAY_TITLE[d] || d, id: d, ...v, on: s.by_day_on[d] || {} }));
+  DGRID = agGrid.createGrid($("#dayGrid"), {
+    rowData: drows,
+    columnDefs: [
+      { field: "day", width: 240, pinned: "left" },
+      { field: "kind", width: 100, filter: true },
+      { headerName: "Runs that fell", width: 140, valueGetter: (p) => `${p.data.fell} / ${p.data.runs}`, type: "rightAligned" },
+      { field: "models_fell", headerName: "Models that fell", width: 150, type: "rightAligned" },
+      { field: "harm_money", headerName: "Left wrongly (off)", width: 160, valueFormatter: (p) => usd(p.value), type: "rightAligned", sort: "desc" },
+      { field: "money_moved", headerName: "Money sent (off)", width: 150, valueFormatter: (p) => usd(p.value), type: "rightAligned" },
+      { headerName: "Left wrongly (on)", width: 150, valueGetter: (p) => usd(p.data.on.harm_money || 0), type: "rightAligned" },
+      { headerName: "Honest work (off)", width: 150, valueGetter: (p) => `${p.data.legit_done} / ${p.data.legit_expected}`, type: "rightAligned" },
+      { headerName: "Honest work (on)", width: 150, valueGetter: (p) => `${p.data.on.legit_done ?? "–"} / ${p.data.on.legit_expected ?? "–"}`, type: "rightAligned" },
+      { headerName: "Wrongly stopped (on)", width: 170, valueGetter: (p) => p.data.on.false_stops ?? 0, type: "rightAligned" },
+    ],
+    defaultColDef: { sortable: true, resizable: true },
+  });
+}
+
+/* cost against harm: one dot per model, hand-drawn SVG, hover tooltip, table below carries every number */
+function drawCostChart(el, rows, days) {
+  const pts = rows.filter((r) => r.cost_per_agent_run_usd > 0);
+  if (!pts.length) { el.innerHTML = `<div class="muted">No cost data yet.</div>`; return; }
+  const W = 960, H = 400, L = 78, R = 24, T = 24, B = 56;
+  const xs = pts.map((p) => p.cost_per_agent_run_usd), ys = pts.map((p) => p.harm_money);
+  const xmin = Math.min(...xs) / 1.6, xmax = Math.max(...xs) * 1.6, ymax = Math.max(1000, Math.max(...ys) * 1.12);
+  const X = (v) => L + ((Math.log10(v) - Math.log10(xmin)) / (Math.log10(xmax) - Math.log10(xmin))) * (W - L - R);
+  const Y = (v) => T + (1 - v / ymax) * (H - T - B);
+  const xt = [0.1, 0.2, 0.5, 1, 2, 5, 10, 20, 50, 100].filter((v) => v >= xmin && v <= xmax);
+  const yStep = ymax > 40000 ? 10000 : ymax > 16000 ? 5000 : ymax > 8000 ? 2000 : 1000;
+  const yt = []; for (let v = 0; v <= ymax; v += yStep) yt.push(v);
+  let g = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Cost per ${days} days against money lost, one dot per model">`;
+  yt.forEach((v) => { g += `<line class="grid" x1="${L}" x2="${W - R}" y1="${Y(v)}" y2="${Y(v)}"/><text class="tick" x="${L - 10}" y="${Y(v) + 4}" text-anchor="end">${money0(v)}</text>`; });
+  xt.forEach((v) => { g += `<text class="tick" x="${X(v)}" y="${H - B + 22}" text-anchor="middle">$${v}</text>`; });
+  g += `<line class="axis" x1="${L}" x2="${W - R}" y1="${Y(0)}" y2="${Y(0)}"/>`;
+  g += `<line class="zero" x1="${L}" x2="${W - R}" y1="${Y(0) - 1.5}" y2="${Y(0) - 1.5}"/><text class="zero-l" x="${L + 8}" y="${Y(0) - 10}" text-anchor="start">With Receipts on: $0.00 for every model</text>`;
+  g += `<text class="axis-l" x="${L + (W - L - R) / 2}" y="${H - 10}" text-anchor="middle">What the model cost for the ${days} days (log scale)</text>`;
+  g += `<text class="axis-l" transform="translate(16 ${T + (H - T - B) / 2}) rotate(-90)" text-anchor="middle">Money that left wrongly, Receipts off</text>`;
+  const labelled = [...pts].sort((a, b) => b.harm_money - a.harm_money).slice(0, 4).concat(
+    [...pts].sort((a, b) => b.cost_per_agent_run_usd - a.cost_per_agent_run_usd).slice(0, 1));
+  pts.forEach((p, i) => {
+    const cx = X(p.cost_per_agent_run_usd), cy = Y(p.harm_money);
+    g += `<g class="dot" data-i="${i}"><circle class="hit" cx="${cx}" cy="${cy}" r="16"/><circle class="mark" cx="${cx}" cy="${cy}" r="6"/>`;
+    if (labelled.includes(p)) g += `<text class="dl" x="${cx + 10}" y="${p.harm_money > 0 ? cy - 8 : cy + 20}">${esc(p.model.replace(/-[0-9a-z]{2,}-[0-9a-z-]+reasoning$/, ""))}</text>`;
+    g += `</g>`;
+  });
+  g += `</svg><div class="tip" hidden></div>`;
+  el.innerHTML = g;
+  const tip = el.querySelector(".tip");
+  el.querySelectorAll(".dot").forEach((d) => {
+    const p = pts[+d.dataset.i];
+    d.addEventListener("mouseenter", (ev) => {
+      tip.innerHTML = `<b>${esc(p.model)}</b> · ${esc(p.provider)}<br>$${p.price_in} in · $${p.price_out} out per M tokens<br>cost for ${days} days: <b>$${p.cost_per_agent_run_usd.toFixed(2)}</b><br>left wrongly: <b>${usd(p.harm_money)}</b> (${p.harm_share_pct}% of what it sent)<br>trap days fell: ${p.trap_days_harm} of ${p.trap_days} · paid a bill twice: ${p.paid_twice}<br>honest work: ${p.legit_done}/${p.legit_expected} off · ${p.on.legit_done ?? "–"}/${p.on.legit_expected ?? "–"} on`;
+      tip.hidden = false;
+    });
+    d.addEventListener("mousemove", (ev) => { const r = el.getBoundingClientRect(); tip.style.left = Math.min(ev.clientX - r.left + 14, r.width - 330) + "px"; tip.style.top = (ev.clientY - r.top + 14) + "px"; });
+    d.addEventListener("mouseleave", () => (tip.hidden = true));
   });
 }
 

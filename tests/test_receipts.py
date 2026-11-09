@@ -271,3 +271,48 @@ def test_a_stop_on_a_mistyped_payee_is_a_catch_not_a_false_stop():
                              "amount": 365, "invoice_number": "INV-HF-0940"})
     o = r.outcome()
     assert o["false_stops"] == [] and o["legit_done"] == 0
+
+
+# ---- providers and prices ---------------------------------------------------------------------
+
+def test_model_names_route_to_their_provider():
+    from receipts import providers
+    assert providers.provider_for("claude-opus-5-5") == "anthropic"
+    assert providers.provider_for("gpt-6-luna") == "openai"
+    assert providers.provider_for("gemini-3.8-flash") == "google"
+    assert providers.provider_for("grok-4.7") == "xai"
+    assert providers.provider_for("glm-5.3") == "vultr"
+
+
+def test_every_measured_model_has_a_published_price():
+    from receipts import providers
+    import run_batch
+    for m in run_batch.MODELS + run_batch.FRONTIER:
+        p = providers.price_for(m)
+        assert p and p[0] > 0 and p[1] > 0 and p[2], m
+    assert providers.usd("glm-5.3", 1_000_000, 1_000_000) == 0.55 + 2.75
+    assert providers.usd("claude-haiku-5-5", 2_000_000, 0) == 0.20
+
+
+def test_env_file_is_read_without_overriding_the_environment(tmp_path, monkeypatch):
+    from receipts import providers
+    f = tmp_path / "keys.env"
+    f.write_text("# comment\nXAI_API_KEY=file-value\nALREADY_SET=file-value\n", encoding="utf-8")
+    monkeypatch.setenv("RECEIPTS_ENV_FILE", str(f))
+    monkeypatch.setenv("ALREADY_SET", "env-value")
+    monkeypatch.delenv("XAI_API_KEY", raising=False)
+    providers._LOADED = False
+    providers.load_env_file()
+    import os
+    assert os.environ["XAI_API_KEY"] == "file-value" and os.environ["ALREADY_SET"] == "env-value"
+    monkeypatch.delenv("XAI_API_KEY", raising=False)
+    providers._LOADED = False
+
+
+def test_owner_can_switch_the_in_flight_hold_off():
+    scn = S["S14_crossed_in_the_mail"]
+    pp = StandIn(scn["paypal"], scn["id"])
+    r = Receipts(scn, pp, mode="enforce", policy={**scn.get("policy", {}), "hold_payment_in_flight": False})
+    res = r.call("create_payout", {"vendor": "Blue Ridge Finishes", "receiver_email": "orders@blueridgefinishes.com",
+                                   "amount": 1836, "invoice_number": "INV-BR-1197"})
+    assert res["batch_status"] == "SUCCESS"

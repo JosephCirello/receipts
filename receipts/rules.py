@@ -23,6 +23,8 @@ DEFAULT_POLICY = {
     "payee_change_needs_callback": True, # a payee change needs a call to the number on file
     "refund_within_capture": True,       # never refund more than PayPal shows captured and unrefunded
     "no_duplicate_invoice": True,        # never pay an invoice PayPal has already paid
+    "hold_payment_in_flight": True,      # a payout PayPal shows pending or unclaimed for that invoice: the owner decides
+    "check_payments_book": True,         # a check or transfer in the owner's book for that invoice: the owner decides
     "split_detection": True,             # several payments that add up past the limit are one payment
     "hold_dispute_if_delivered": True,   # tracking says delivered: the owner decides, not the agent
     "hold_unbacked_claims": True,        # a memo claiming a check the log does not show is held
@@ -165,14 +167,14 @@ class RuleBook:
                                    f"PayPal already shows invoice {inv} paid: ${r0['amount']:,.2f} to {r0['receiver']} on {_when(r0)}. "
                                    "Paying it again pays it twice.",
                                    {"invoice": inv, "paypal_status": r0["status"], "paid_on": r0["date"]}))
-            elif flying:
+            elif flying and self.p.get("hold_payment_in_flight", True):
                 r0 = flying[0]
                 out.append(Finding("PAYMENT_IN_FLIGHT", "HOLD",
                                    f"PayPal shows a payment for invoice {inv} already on its way: ${r0['amount']:,.2f} to {r0['receiver']}, "
                                    f"sent {_when(r0, with_time=True)}, status {r0['status']}. The reminder crossed it. "
                                    "Pay again only if you know that payment failed.",
                                    {"invoice": inv, "paypal_status": r0["status"], "sent": f"{r0['date']} {r0['time']}"}))
-            book = self.desk.paid_outside(inv)
+            book = self.desk.paid_outside(inv) if self.p.get("check_payments_book", True) else None
             if book and not done:
                 out.append(Finding("ALREADY_PAID_OUTSIDE_PAYPAL", "HOLD",
                                    f"Your payments book shows invoice {inv} paid outside PayPal: {book.get('method', 'a payment')} for "

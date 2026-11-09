@@ -333,10 +333,15 @@ def ledger(limit: int = 3000):
 
 @app.get("/api/results")
 def results():
-    p = RESULTS / "summary.json"
+    """The measurement, computed from the scored runs (receipts/measure.py), the same numbers the README states."""
+    from receipts import measure
+    p = RESULTS / "episodes_scored.jsonl"
     if not p.exists():
-        return JSONResponse({"scored": 0})
-    return json.loads(p.read_text(encoding="utf-8"))
+        p = RESULTS / "episodes.jsonl"
+    rows = measure.load_scored(p)
+    if not rows:
+        return JSONResponse({"scored_runs": 0})
+    return measure.summary(rows)
 
 
 app.mount("/mcp", MCP_SERVER.streamable_http_app(streamable_http_path="/"))

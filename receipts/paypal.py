@@ -431,9 +431,27 @@ class SandboxPayPal:
             r = self.create_payout(receiver=p["receiver"], amount=p["amount"], invoice_number=p["invoice"], note="Earlier payment (seeded)")
             if r.get("error"):
                 self.seed_log.append(f"payout history {p['invoice']}: {str(r)[:200]}")
-            else:
-                made = self.history.pop()                 # the seeded entry already stands for it; keep its date, take PayPal's id
-                self.history[i]["id"] = made["id"]
+                continue
+            made = self.history.pop()                     # the seeded entry already stands for it; keep its date, take PayPal's id
+            self.history[i]["id"] = made["id"]
+            # PayPal's word on the payout, not ours: a payout to an email with no sandbox account comes back
+            # UNCLAIMED (a payment still on its way); one to a sandbox account comes back SUCCESS.
+            status = self.payout_status(made["id"])
+            if status:
+                self.history[i]["status"] = status
+                self.history[i]["paypal_said"] = status
+
+    def payout_status(self, payout_batch_id: str) -> str | None:
+        j = self.get_payout(payout_batch_id)
+        items = j.get("items") or []
+        if items:
+            return str(items[0].get("transaction_status") or "").upper() or None
+        return str((j.get("batch_header") or {}).get("batch_status") or "").upper() or None
+
+    def in_flight_as_seeded(self) -> list[str]:
+        """Seeded payouts that were meant to be on their way but PayPal reports as settled or failed."""
+        want = {h["invoice"]: str(p.get("status", "SUCCESS")).upper() for h, p in zip(self.history, self.seed.get("payout_history", []))}
+        return [h["invoice"] for h in self.history if want.get(h["invoice"]) in IN_FLIGHT and h["status"] not in IN_FLIGHT]
 
     def list_orders(self) -> list[dict]:
         out = []
@@ -550,15 +568,24 @@ def make_paypal(seed: dict, scenario_id: str, mode: str | None = None, seeded_id
         if seed.get("disputes"):
             # PayPal's sandbox cannot open buyer disputes by API: this day runs on the stand-in, labelled as such.
             return StandIn(seed, scenario_id)
-        if any(str(p.get("status", "SUCCESS")).upper() != "SUCCESS" for p in seed.get("payout_history", [])):
+        wanted = {str(p.get("status", "SUCCESS")).upper() for p in seed.get("payout_history", [])}
+        if wanted - (PAID | IN_FLIGHT):
+            # a payout that FAILED cannot be made on request in the sandbox; this day runs on the stand-in, labelled
             s = StandIn(seed, scenario_id)
-            s.note = "PayPal's sandbox cannot hold a payout pending or make one fail on request; this day ran on the stand-in"
+            s.note = "PayPal's sandbox cannot make a payout fail on request; this day ran on the stand-in"
             return s
         try:
             pp = SandboxPayPal(seed, scenario_id, seeded_ids)
         except Exception as e:  # noqa: BLE001
             s = StandIn(seed, scenario_id)
             s.note = f"sandbox unavailable ({type(e).__name__}); this day ran on the stand-in"
+            return s
+        settled = pp.in_flight_as_seeded() if not seeded_ids else []
+        if settled:
+            # the day needs a payment still on its way, and PayPal reports it settled: say so and use the stand-in
+            pp.close()
+            s = StandIn(seed, scenario_id)
+            s.note = f"the sandbox settled payout(s) {settled} that this day needs in flight; this day ran on the stand-in"
             return s
         missing = [o["key"] for o in seed.get("orders", []) if f"{o['key']}.capture_id" not in pp.ids]
         if missing:
