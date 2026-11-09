@@ -57,8 +57,15 @@ def main():
             src = HERE / "takes" / f"{s['visual']['take']}.webm"
             start = float(s["visual"].get("start", 0))            # skip the page load at the head of a take
             f = max(1.0, min(3.0, (dur(src) - start) / T))
+            focus = ""
+            if s["visual"].get("focus"):
+                fo = s["visual"]["focus"]
+                n0, z = int(fo["from"] * T * FPS), fo["zoom"]
+                step = (z - 1) / max(1, int(0.35 * T * FPS))
+                focus = (f",scale=3840:2160,zoompan=z='if(lt(on,{n0}),1,min(1+(on-{n0})*{step:.5f},{z}))'"
+                         f":x='(iw-iw/zoom)*{fo['cx']}':y='(ih-ih/zoom)*{fo['cy']}':d=1:s=1920x1080:fps={FPS}")
             vf = (f"[0:v]setpts=PTS/{f:.4f},fps={FPS},scale=1920:1080,tpad=stop_mode=clone:stop_duration=20,"
-                  f"trim=duration={T},setpts=PTS-STARTPTS,subtitles={sub}[v]")
+                  f"trim=duration={T},setpts=PTS-STARTPTS{focus},subtitles={sub}[v]")
             cmd = ["ffmpeg", "-y", "-v", "error", "-ss", f"{start:.2f}", "-i", str(src)] + common_a
         else:
             src = B / "slides" / f"{s['visual']['slide']}.png"

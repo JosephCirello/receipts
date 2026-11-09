@@ -6,7 +6,13 @@
    "id": "hook",
    "visual": {
     "take": "sbs_s2",
-    "start": 1.4
+    "start": 1.4,
+    "focus": {
+     "from": 0.45,
+     "zoom": 1.16,
+     "cx": 0.5,
+     "cy": 0.78
+    }
    },
    "say": "Same AI agent. Same inbox. On the left, it just paid a supplier twice. On the right, Receipts stopped it, because PayPal already shows that invoice as paid.",
    "caption": "Same agent, same inbox. Left: paid twice. Right: stopped, because PayPal shows it paid."
@@ -34,6 +40,14 @@
    },
    "say": "The agent reads the email. Receipts reads PayPal.",
    "caption": "The agent reads the email. Receipts reads PayPal."
+  },
+  {
+   "id": "how",
+   "visual": {
+    "slide": "how"
+   },
+   "say": "Under the hood, the agent's PayPal tools run through PayPal's official MCP server and the Payouts API. Receipts sits in between, reads PayPal's own records, and decides in plain code.",
+   "caption": "The agent's PayPal tools run through PayPal's MCP server and Payouts API. Receipts sits in between."
   },
   {
    "id": "rules",

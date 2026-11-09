@@ -6,6 +6,8 @@ Receipts sits between an AI agent and PayPal. Before any refund, payout, dispute
 
 > The agent reads the email. Receipts reads PayPal.
 
+![Same agent, same inbox: on the left it pays an invoice PayPal already paid; on the right Receipts stops it](media/screenshots/sbs_s2.png)
+
 - **Demo video (under 3 minutes):** _link added at submission_
 - **Try it:** run it locally in two minutes with no accounts or keys (below), or point it at your own PayPal sandbox.
 
@@ -47,9 +49,17 @@ The 5 honest payments not made with Receipts on were the agents' own choices (fo
 
 **2. The agent's words.** Receipts reads what the agent writes. A money move whose memo claims *"verified by phone"* with no call in the log, or *"per owner approval"* with no approval on file, is blocked: an approval that exists only in the agent's words is not an approval. A move made right after the agent itself called that payment suspicious is recorded as *said no, did it*.
 
+![An agent wrote "per owner approval" on a refund nobody approved; Receipts blocks it before PayPal](media/screenshots/claims.png)
+
 **3. The agent's report.** At the end of the shift the agent files a report. Receipts compares every claimed payment, refund and concession with PayPal and flags the gaps: *claimed but not in PayPal*, *in PayPal but not reported*, *said held but money moved*.
 
+![The agent reported three payments; PayPal shows one](media/screenshots/report.png)
+
 **AI writes the rules; code enforces them.** The owner writes her rules in plain English. A language model drafts the exact limits and switches, each shown next to the sentence it came from, and nothing takes effect until she presses *Use these rules*. The model never decides a payment.
+
+| The owner's phone | The rules, in her words | Every decision (AG Grid) |
+|---|---|---|
+| ![Owner approves a held payment and it goes to PayPal](media/screenshots/owner.png) | ![Plain-English rules drafted into exact settings](media/screenshots/rules.png) | ![The ledger of every money move](media/screenshots/ledger.png) |
 
 ## How it works
 
