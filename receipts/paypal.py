@@ -286,7 +286,64 @@ class SandboxPayPal:
         self.seed = seed
         self.ids = dict(seeded_ids or {})
         self.paid: set[str] = {str(p["invoice"]).upper() for p in seed.get("payout_history", [])}
+        self.orders: dict[str, dict] = {}
+        self.seed_log: list[str] = []
         self.mcp = _MCPBridge(self.token())
+        if not seeded_ids:
+            self.seed_sandbox()
+
+    # ---- the day's records, made real in the sandbox ------------------------------------
+    def seed_sandbox(self):
+        """Create the scenario's orders as real sandbox orders, paid with PayPal's published
+        test card and captured; record partial refunds and shipment tracking; make the
+        'already paid' invoices real payouts. Ids are mapped into the scenario's text."""
+        for o in self.seed.get("orders", []):
+            body = {"intent": "CAPTURE",
+                    "purchase_units": [{"reference_id": o["key"], "description": o.get("description", "")[:127],
+                                        "amount": {"currency_code": "USD", "value": f"{_money(o['amount']):.2f}"}}],
+                    "payment_source": {"card": {"number": "4111111111111111", "expiry": "2030-12", "security_code": "123",
+                                                "name": "Sandbox Buyer",
+                                                "billing_address": {"address_line_1": "1 Test Street", "admin_area_2": "Asheville",
+                                                                    "admin_area_1": "NC", "postal_code": "28801", "country_code": "US"}}}}
+            j = self._rest("POST", "/v2/checkout/orders", body)
+            if "error" in j:
+                self.seed_log.append(f"order {o['key']}: {str(j)[:300]}")
+                continue
+            oid = j["id"]
+            if j.get("status") != "COMPLETED":
+                j = self._rest("POST", f"/v2/checkout/orders/{oid}/capture", {})
+                if "error" in j:
+                    self.seed_log.append(f"capture {o['key']}: {str(j)[:300]}")
+                    continue
+            caps = [c for pu in j.get("purchase_units", []) for c in (pu.get("payments") or {}).get("captures", [])]
+            if not caps:
+                self.seed_log.append(f"order {o['key']}: no capture in {str(j)[:200]}")
+                continue
+            cid = caps[0]["id"]
+            self.ids[f"{o['key']}.order_id"], self.ids[f"{o['key']}.capture_id"] = oid, cid
+            self.orders[oid] = {"key": o["key"], "id": oid, "capture_id": cid, "amount": _money(o["amount"]),
+                                "payer": o.get("payer_email", ""), "description": o.get("description", "")}
+            if _money(o.get("already_refunded", 0)) > 0:
+                self._rest("POST", f"/v2/payments/captures/{cid}/refund",
+                           {"amount": {"value": f"{_money(o['already_refunded']):.2f}", "currency_code": "USD"}})
+            t = o.get("tracking")
+            if t:
+                r = self.mcp.call("create_shipment_tracking", {"order_id": oid, "transaction_id": cid, "tracking_number": t["number"],
+                                                               "carrier": t["carrier"], "status": t["status"]})
+                if isinstance(r, dict) and r.get("error"):
+                    self.seed_log.append(f"tracking {o['key']}: {str(r)[:200]}")
+        for p in self.seed.get("payout_history", []):
+            r = self.create_payout(receiver=p["receiver"], amount=p["amount"], invoice_number=p["invoice"], note="Earlier payment (seeded)")
+            if r.get("error"):
+                self.seed_log.append(f"payout history {p['invoice']}: {str(r)[:200]}")
+
+    def list_orders(self) -> list[dict]:
+        out = []
+        for o in self.orders.values():
+            rec = self.capture_record(o["capture_id"]) or {}
+            out.append({"order_id": o["id"], "capture_id": o["capture_id"], "amount": o["amount"],
+                        "refunded": rec.get("refunded", 0.0), "payer": o["payer"], "description": o["description"]})
+        return out
 
     # ---- auth and REST -------------------------------------------------------------
     def token(self) -> str:
@@ -382,5 +439,8 @@ def make_paypal(seed: dict, scenario_id: str, mode: str | None = None, seeded_id
     if mode == "auto":
         mode = "sandbox" if all(creds()) else "standin"
     if mode == "sandbox":
+        if seed.get("disputes"):
+            # PayPal's sandbox cannot open buyer disputes by API: this day runs on the stand-in, labelled as such.
+            return StandIn(seed, scenario_id)
         return SandboxPayPal(seed, scenario_id, seeded_ids)
     return StandIn(seed, scenario_id)

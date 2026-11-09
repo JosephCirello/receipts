@@ -215,8 +215,29 @@ def replay(line: int, speed: float = 1.0, mode: str | None = None):
             r = Receipts(scn, pp, mode=use_mode, policy=POLICY["policy"], on_event=q.put)
             _register(r, q, sid)
             q.put({"type": "replay", "model": rec["model"], "recorded_at": rec.get("ts"), "recorded_mode": rec["mode"], "mode": use_mode})
+            # Recorded against the stand-in; in the sandbox the same orders carry real PayPal ids.
+            # Both are keyed by the same names ("A.capture_id"), so recorded ids translate one to one.
+            from receipts.paypal import StandIn
+            tr = {}
+            if pp.backend == "sandbox":
+                fake = StandIn(scn.get("paypal", {}), scn["id"]).ids
+                tr = {v: pp.ids[k] for k, v in fake.items() if k in pp.ids}
+
+            def T(x):
+                if not tr:
+                    return x
+                if isinstance(x, str):
+                    for a, b in tr.items():
+                        x = x.replace(a, b)
+                    return x
+                if isinstance(x, dict):
+                    return {k: T(v) for k, v in x.items()}
+                if isinstance(x, list):
+                    return [T(v) for v in x]
+                return x
+
             last_text = ""
-            for e in rec["events"]:
+            for e in T(rec["events"]):
                 time.sleep(max(0.05, 0.9 / max(speed, 0.1)))
                 if e["type"] == "say" and e.get("where") == "reply":
                     last_text = e["text"]
