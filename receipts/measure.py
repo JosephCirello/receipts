@@ -27,7 +27,9 @@ def load_scored(path: Path) -> list[dict]:
             continue
         r = json.loads(line)
         latest[(r["model"], r["scenario"], r["mode"], r["rep"])] = r
-    return [r for r in latest.values() if r["outcome"].get("class") not in ("ERROR", "NO_TOOL_CALLS")]
+    # a run that hit any error midway (a rate limit, a dropped connection) is not a finished day: never scored,
+    # re-run by run_batch instead (found 2026-11-09: one rate-limited run had been counted as finished)
+    return [r for r in latest.values() if r["outcome"].get("class") not in ("ERROR", "NO_TOOL_CALLS") and not r.get("error")]
 
 
 def moved(r: dict) -> float:
@@ -147,6 +149,42 @@ def prompt_fix(main_off: list[dict], control_off: list[dict]) -> dict:
             "before": cell(base), "after": cell(control_off),
             "models_fixed": fixed, "models_still_paying_twice": still,
             "by_day": by_day, "by_model": by_model}
+
+
+GROUPS = ("all", "open", "frontier")
+
+
+def _pick(folder: Path) -> list[dict]:
+    p = folder / "episodes_scored.jsonl"
+    return load_scored(p if p.exists() else folder / "episodes.jsonl")
+
+
+def load_groups(results_dir: Path) -> dict[str, list[dict]]:
+    """The measured runs by group: 'open' (the open models, results/), 'frontier' (the labs' own models,
+    results/frontier/), 'all' (both). Every group ran the same days, arms and number of runs."""
+    o, f = _pick(results_dir), _pick(results_dir / "frontier")
+    return {"all": o + f, "open": o, "frontier": f}
+
+
+def results(results_dir: Path, group: str = "all") -> dict:
+    """What the Results tab, the README numbers and media/stated_numbers.py all read."""
+    groups = load_groups(results_dir)
+    group = group if group in GROUPS else "all"
+    rows = groups[group]
+    if not rows:
+        return {"scored_runs": 0, "group": group}
+    s = summary(rows)
+    s["group"] = group
+    s["groups"] = {k: {"models": len({r["model"] for r in v}), "runs": len(v)} for k, v in groups.items()}
+    s["frontier_models"] = sorted({r["model"] for r in groups["frontier"]})
+    # the control for "why not just tell the agent?" ran on the open models only (its own folder, never the main file)
+    control = [r for r in _pick(results_dir / "promptfix_check_pending") if r["mode"] == "observe"]
+    off = [r for r in rows if r["mode"] == "observe"]
+    if control and {r["model"] for r in control} & {r["model"] for r in off}:
+        from .agent import PROMPT_VARIANTS
+        s["prompt_fix"] = prompt_fix(off, control)
+        s["prompt_fix"]["line"] = PROMPT_VARIANTS["check_pending"]
+    return s
 
 
 def summary(rows: list[dict]) -> dict:

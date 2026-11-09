@@ -306,26 +306,36 @@ async function loadLedger() {
 let MGRID = null, DGRID = null;
 const money0 = (x) => "$" + Math.round(x || 0).toLocaleString("en-US");
 const DAY_TITLE = {};
-async function loadResults() {
-  const s = await (await fetch("/api/results")).json();
+const GROUP_LABEL = { all: "All models", open: "Open models", frontier: "Frontier models" };
+const GROUP_WHO = { all: "", open: "open-model ", frontier: "frontier-model " };
+let RES_GROUP = new URLSearchParams(location.search).get("group") || "all";
+async function loadResults(group = RES_GROUP) {
+  RES_GROUP = group;
+  const s = await (await fetch("/api/results?group=" + encodeURIComponent(group))).json();
   const body = $("#resultsBody");
   if (!s.scored_runs) { body.innerHTML = `<div class="card">No measured runs on file yet. <code>python run_batch.py</code> writes them.</div>`; return; }
   META.scenarios.forEach((x) => (DAY_TITLE[x.id] = x.title));
   const o = s.receipts_off, e = s.receipts_on, sn = s.second_notice_off, cr = s.crossed_in_the_mail_off;
   const modelsPaidTwice = Object.values(s.by_model_off).filter((m) => m.paid_twice > 0).length;
+  const FR = new Set(s.frontier_models || []);
+  const kinds = Object.values(s.by_day_off).reduce((a, d) => ((a[d.kind] = (a[d.kind] || 0) + 1), a), {});
+  const seg = Object.entries(s.groups || {}).filter(([, g]) => g.runs).map(([k, g]) =>
+    `<button data-group="${k}" class="${k === s.group ? "on" : ""}" aria-pressed="${k === s.group}">${GROUP_LABEL[k]} <span class="muted">${g.models}</span></button>`).join("");
   body.innerHTML = `
+    <div class="seg" role="group" aria-label="Which models">${seg}</div>
     <div class="res-h"><h2>Measured: ${s.models} models · ${s.days} business days · ${s.scored_runs} runs · unguarded, then with Receipts</h2><span class="muted">cost at each provider's published price, read ${esc(s.prices_read_on)}</span></div>
-    <div class="hero-pct"><div class="pct">${o.harm_share_pct}%</div><div class="what">of every dollar an <b>unguarded</b> AI agent sent <b>should never have left the business.</b><small>${money0(o.harm_money)} of ${money0(o.money_moved)} with nothing between the agent and PayPal · about 1 dollar in ${Math.round(o.one_dollar_in || 0)} · ${sn.share_of_all_harm_pct}% of it a bill paid twice</small></div></div>
+    <div class="hero-pct"><div class="pct">${Number(o.harm_share_pct).toFixed(1)}%</div><div class="what">of every dollar an <b>unguarded</b> ${GROUP_WHO[s.group] || ""}AI agent sent <b>should never have left the business.</b><small>${money0(o.harm_money)} of ${money0(o.money_moved)} with nothing between the agent and PayPal · about 1 dollar in ${Math.round(o.one_dollar_in || 0)} · ${sn.share_of_all_harm_pct}% of it a bill paid twice</small></div></div>
     <div class="tiles">
       <div class="tile"><div class="k">With Receipts on</div><div class="v good-t">${usd(e.harm_money)}</div><div class="s">left wrongly on the same ${e.trap_days} trap days, measured the same way</div></div>
       <div class="tile"><div class="k">Honest work, untouched</div><div class="v">${pct(e.legit_done, e.legit_expected)}</div><div class="s">${e.legit_done} of ${e.legit_expected} honest payments and refunds went straight to PayPal; ${e.false_stops} wrongly stopped</div></div>
       <div class="tile"><div class="k">Crossed in the mail</div><div class="v bad-t">${pct(cr.paid_twice, cr.runs)}</div><div class="s">of runs paid Maya twice (${cr.paid_twice} of ${cr.runs}); ${pct(cr.paid_twice_after_checking_paypal, cr.paid_twice)} of those had checked PayPal first, for completed payments only. Every run that asked for pending found hers.</div></div>
-      <div class="tile"><div class="k">Models that paid a bill twice</div><div class="v bad-t">${pct(modelsPaidTwice, s.models)}</div><div class="s">${modelsPaidTwice} of ${s.models} models, at least once across the six second-notice days, Receipts off</div></div>
+      <div class="tile"><div class="k">Models that paid a bill twice</div><div class="v bad-t">${pct(modelsPaidTwice, s.models)}</div><div class="s">${modelsPaidTwice} of ${s.models} models, at least once across the ${sn.days} second-notice days, Receipts off</div></div>
       <div class="tile"><div class="k">Report vs PayPal</div><div class="v">${o.report_mismatch + e.report_mismatch}</div><div class="s">end-of-day reports claiming money that never moved</div></div>
       <div class="tile"><div class="k">Judge model</div><div class="v">None</div><div class="s">verdicts are plain rules on the call, the records and PayPal; harm is a fixed definition per day, written apart from the rules</div></div>
     </div>
     <div class="card viz-card">
       <h3>Does a dearer model lose less? What each model cost for the ${s.days} days, against what it lost, unguarded</h3>
+      ${FR.size && s.group === "all" ? `<div class="legend"><span><i class="sw open"></i>Open models (one flat price on Vultr)</span><span><i class="sw fr"></i>Frontier models (Anthropic, OpenAI, xAI)</span></div>` : ""}
       <div id="costChart" class="viz-root"></div>
       <p class="method">One dot per model. Across: what the business paid the model to work the ${s.days} days, at the provider's published price (log scale). Up: money that left wrongly. The dashed line is the same ${s.days} days with Receipts on: $0.00 for every model. Hover a dot for the detail; the table below has every number.</p>
     </div>
@@ -334,13 +344,15 @@ async function loadResults() {
     <div id="modelGrid" class="ag-theme-quartz"></div>
     <h3 class="sub">Per day, Receipts off</h3>
     <div id="dayGrid" class="ag-theme-quartz"></div>
-    <p class="method">Each model worked each day in two arms: Receipts off (every call went to PayPal; Receipts recorded what it would have done) and Receipts on. Ten days carry a trap, including five kinds of second notice; seven are honest days, including a bill that really is overdue and a payment that really bounced. Two runs per model, day and arm is presence, not frequency.</p>`;
-  const rows = Object.entries(s.by_model_off).map(([m, d]) => ({ model: m, ...d, on: s.by_model_on[m] || {} }));
+    <p class="method">Each model worked each day in two arms: Receipts off (every call went to PayPal; Receipts recorded what it would have done) and Receipts on. ${kinds.trap || 0} days carry a trap, ${sn.days} of them a bill that could be paid twice; ${kinds.control || 0} are honest days, including a bill that really is overdue and a payment that really bounced. Two runs per model, day and arm is presence, not frequency.</p>`;
+  body.querySelectorAll(".seg button").forEach((b) => b.addEventListener("click", () => loadResults(b.dataset.group)));
+  const rows = Object.entries(s.by_model_off).map(([m, d]) => ({ model: m, group: FR.has(m) ? "frontier" : "open", ...d, on: s.by_model_on[m] || {} }));
   drawCostChart($("#costChart"), rows, s.days);
   MGRID = agGrid.createGrid($("#modelGrid"), {
     rowData: rows,
     columnDefs: [
       { field: "model", width: 250, pinned: "left" },
+      { field: "group", width: 110, filter: true },
       { field: "provider", width: 110, filter: true },
       { headerName: "$ / M tokens in · out", width: 170, valueGetter: (p) => `${p.data.price_in} · ${p.data.price_out}`, type: "rightAligned" },
       { field: "cost_per_agent_run_usd", headerName: `Cost for ${s.days} days`, width: 150, valueFormatter: (p) => "$" + (p.value || 0).toFixed(2), type: "rightAligned", sort: "asc" },
@@ -405,11 +417,13 @@ function drawCostChart(el, rows, days) {
   g += `<line class="zero" x1="${L}" x2="${W - R}" y1="${Y(0) - 1.5}" y2="${Y(0) - 1.5}"/><text class="zero-l" x="${L + 8}" y="${Y(0) - 10}" text-anchor="start">With Receipts on: $0.00 for every model</text>`;
   g += `<text class="axis-l" x="${L + (W - L - R) / 2}" y="${H - 10}" text-anchor="middle">What the model cost for the ${days} days (log scale)</text>`;
   g += `<text class="axis-l" transform="translate(16 ${T + (H - T - B) / 2}) rotate(-90)" text-anchor="middle">Money that left wrongly, unguarded</text>`;
-  const labelled = [...pts].sort((a, b) => b.harm_money - a.harm_money).slice(0, 4).concat(
-    [...pts].sort((a, b) => b.cost_per_agent_run_usd - a.cost_per_agent_run_usd).slice(0, 1));
+  // labelled: the three that lost most, the dearest model, and the dearest model that still lost money
+  const dear = [...pts].sort((a, b) => b.cost_per_agent_run_usd - a.cost_per_agent_run_usd);
+  const labelled = [...pts].sort((a, b) => b.harm_money - a.harm_money).slice(0, 3).concat(
+    dear.slice(0, 1), dear.filter((p) => p.harm_money > 0).slice(0, 1));
   pts.forEach((p, i) => {
     const cx = X(p.cost_per_agent_run_usd), cy = Y(p.harm_money);
-    g += `<g class="dot" data-i="${i}"><circle class="hit" cx="${cx}" cy="${cy}" r="16"/><circle class="mark" cx="${cx}" cy="${cy}" r="6"/>`;
+    g += `<g class="dot ${p.group === "frontier" ? "fr" : "open"}" data-i="${i}"><circle class="hit" cx="${cx}" cy="${cy}" r="16"/><circle class="mark" cx="${cx}" cy="${cy}" r="6"/>`;
     if (labelled.includes(p)) g += `<text class="dl" x="${cx + 10}" y="${p.harm_money > 0 ? cy - 8 : cy + 20}">${esc(p.model.replace(/-[0-9a-z]{2,}-[0-9a-z-]+reasoning$/, ""))}</text>`;
     g += `</g>`;
   });
@@ -419,7 +433,7 @@ function drawCostChart(el, rows, days) {
   el.querySelectorAll(".dot").forEach((d) => {
     const p = pts[+d.dataset.i];
     d.addEventListener("mouseenter", (ev) => {
-      tip.innerHTML = `<b>${esc(p.model)}</b> · ${esc(p.provider)}<br>$${p.price_in} in · $${p.price_out} out per M tokens<br>cost for ${days} days: <b>$${p.cost_per_agent_run_usd.toFixed(2)}</b><br>left wrongly: <b>${usd(p.harm_money)}</b> (${p.harm_share_pct}% of what it sent)<br>trap days fell: ${p.trap_days_harm} of ${p.trap_days} · paid a bill twice: ${p.paid_twice}<br>honest work: ${p.legit_done}/${p.legit_expected} off · ${p.on.legit_done ?? "–"}/${p.on.legit_expected ?? "–"} on`;
+      tip.innerHTML = `<b>${esc(p.model)}</b> · ${esc(p.provider)} · ${p.group === "frontier" ? "frontier" : "open"} model<br>$${p.price_in} in · $${p.price_out} out per M tokens<br>cost for ${days} days: <b>$${p.cost_per_agent_run_usd.toFixed(2)}</b><br>left wrongly: <b>${usd(p.harm_money)}</b> (${p.harm_share_pct}% of what it sent)<br>trap days fell: ${p.trap_days_harm} of ${p.trap_days} · paid a bill twice: ${p.paid_twice}<br>honest work: ${p.legit_done}/${p.legit_expected} off · ${p.on.legit_done ?? "–"}/${p.on.legit_expected ?? "–"} on`;
       tip.hidden = false;
     });
     d.addEventListener("mousemove", (ev) => { const r = el.getBoundingClientRect(); tip.style.left = Math.min(ev.clientX - r.left + 14, r.width - 330) + "px"; tip.style.top = (ev.clientY - r.top + 14) + "px"; });

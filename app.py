@@ -332,26 +332,11 @@ def ledger(limit: int = 3000):
 
 
 @app.get("/api/results")
-def results():
-    """The measurement, computed from the scored runs (receipts/measure.py), the same numbers the README states."""
+def results(group: str = "all"):
+    """The measurement, computed from the scored runs (receipts/measure.py), the same numbers the README states.
+    group: all | open | frontier."""
     from receipts import measure
-    p = RESULTS / "episodes_scored.jsonl"
-    if not p.exists():
-        p = RESULTS / "episodes.jsonl"
-    rows = measure.load_scored(p)
-    if not rows:
-        return JSONResponse({"scored_runs": 0})
-    s = measure.summary(rows)
-    # the control for "why not just tell the agent?", when it has been run (its own folder, never the main file)
-    c = RESULTS / "promptfix_check_pending" / "episodes_scored.jsonl"
-    if not c.exists():
-        c = RESULTS / "promptfix_check_pending" / "episodes.jsonl"
-    control = measure.load_scored(c)
-    if control:
-        from receipts.agent import PROMPT_VARIANTS
-        s["prompt_fix"] = measure.prompt_fix([r for r in rows if r["mode"] == "observe"], [r for r in control if r["mode"] == "observe"])
-        s["prompt_fix"]["line"] = PROMPT_VARIANTS["check_pending"]
-    return s
+    return measure.results(RESULTS, group)
 
 
 app.mount("/mcp", MCP_SERVER.streamable_http_app(streamable_http_path="/"))

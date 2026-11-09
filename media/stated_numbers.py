@@ -1,9 +1,10 @@
-"""Every number the video, the cards and the README state, read from results/episodes_scored.jsonl.
+"""Every number the video, the cards and the README state, read from the scored runs.
 
-  python media/stated_numbers.py            # the full summary as JSON
-  python media/stated_numbers.py --table    # cost against harm, one line per model
+  python media/stated_numbers.py                       # the full summary as JSON, every model
+  python media/stated_numbers.py --table               # cost against harm, one line per model
+  python media/stated_numbers.py --group open --table  # open models only (also: frontier)
 
-The computation lives in receipts/measure.py, which the app's Results tab also reads.
+The computation lives in receipts/measure.py (measure.results), which the app's Results tab also reads.
 """
 import json
 import sys
@@ -13,19 +14,12 @@ ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
 from receipts import measure  # noqa: E402
 
-rows = measure.load_scored(ROOT / "results" / "episodes_scored.jsonl")
-s = measure.summary(rows)
-cpath = ROOT / "results" / "promptfix_check_pending" / "episodes_scored.jsonl"
-if not cpath.exists():
-    cpath = ROOT / "results" / "promptfix_check_pending" / "episodes.jsonl"
-control = measure.load_scored(cpath)
-if control:
-    from receipts.agent import PROMPT_VARIANTS
-    s["prompt_fix"] = measure.prompt_fix([r for r in rows if r["mode"] == "observe"], [r for r in control if r["mode"] == "observe"])
-    s["prompt_fix"]["line"] = PROMPT_VARIANTS["check_pending"]
+group = sys.argv[sys.argv.index("--group") + 1] if "--group" in sys.argv else "all"
+s = measure.results(ROOT / "results", group)
+print(f"group: {s['group']} | {s.get('groups')}", file=sys.stderr)
 
 if "--table" in sys.argv:
-    print(f"{'model':30s} {'provider':9s} {'$/M in':>7s} {'$/M out':>8s} {'cost/17d':>9s} {'harm off':>10s} {'share':>6s} {'fell':>6s} {'honest off':>10s} {'honest on':>10s}")
+    print(f"{'model':30s} {'provider':9s} {'$/M in':>7s} {'$/M out':>8s} {'cost/19d':>9s} {'harm off':>10s} {'share':>6s} {'fell':>6s} {'honest off':>10s} {'honest on':>10s}")
     for m, v in s["by_model_off"].items():
         on = s["by_model_on"].get(m, {})
         print(f"{m[:30]:30s} {v['provider']:9s} {v['price_in']:>7.2f} {v['price_out']:>8.2f} {v['cost_per_agent_run_usd'] or 0:>9.2f} "

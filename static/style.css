@@ -217,9 +217,18 @@ textarea { width: 100%; height: 360px; resize: vertical; padding: 14px; border-r
 .ag-theme-quartz .r-ALLOW { box-shadow: inset 4px 0 0 var(--ok); }
 
 /* ---- results: hero, cost-against-harm chart ---- */
-:root { --viz-1: #2a78d6; --viz-grid: #e1e0d9; --viz-axis: #c3c2b7; --viz-muted: #898781; }
-@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --viz-1: #3987e5; --viz-grid: #2c2c2a; --viz-axis: #383835; --viz-muted: #898781; } }
-:root[data-theme="dark"] { --viz-1: #3987e5; --viz-grid: #2c2c2a; --viz-axis: #383835; --viz-muted: #898781; }
+:root { --viz-1: #2a78d6; --viz-2: #eb6834; --viz-grid: #e1e0d9; --viz-axis: #c3c2b7; --viz-muted: #898781; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --viz-1: #3987e5; --viz-2: #d95926; --viz-grid: #2c2c2a; --viz-axis: #383835; --viz-muted: #898781; } }
+:root[data-theme="dark"] { --viz-1: #3987e5; --viz-2: #d95926; --viz-grid: #2c2c2a; --viz-axis: #383835; --viz-muted: #898781; }
+.seg { display: inline-flex; gap: 2px; padding: 3px; border: 1px solid var(--line); border-radius: 10px; background: var(--card); margin: 4px 0 6px; }
+.seg button { border: 0; background: transparent; color: var(--ink-2); font: 600 13.5px Inter, system-ui, sans-serif; padding: 6px 12px; border-radius: 7px; cursor: pointer; }
+.seg button.on { background: var(--brand); color: var(--card); }
+.seg button.on .muted { color: inherit; opacity: .75; }
+.legend { display: flex; flex-wrap: wrap; gap: 18px; font-size: 13px; color: var(--ink-2); margin: 0 0 6px; }
+.legend .sw { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 6px; vertical-align: -1px; }
+.legend .sw.open { background: var(--viz-1); }
+.legend .sw.fr { background: var(--viz-2); }
+.viz-root .dot.fr .mark { fill: var(--viz-2); }
 .hero-pct { display: flex; align-items: center; gap: 28px; background: var(--bad-bg, #fdecec); border: 2px solid var(--bad); border-radius: var(--radius); padding: 16px 26px; margin: 12px 0 14px; }
 .hero-pct .pct { font: 900 84px/0.95 Inter; letter-spacing: -.05em; color: var(--bad); }
 .hero-pct .what { font-size: 22px; line-height: 1.2; font-weight: 600; letter-spacing: -.01em; }

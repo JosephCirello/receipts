@@ -31,11 +31,14 @@ MODELS = [   # the twelve open models on Vultr Serverless Inference (one flat pr
     "minimax-m3.1-flash", "muse-glimmer-30b", "nemotron-3-nano-omni-30b-a3b-reasoning",
     "qwen3.8-27b", "qwen3.8-flash-next", "raon-1-mini-preview",
 ]
-FRONTIER = [  # three price points from each lab, for the cost-versus-harm finding (prices in receipts/providers.py)
-    "claude-haiku-5-5", "gpt-6-luna", "gemini-3.8-flash",
-    "claude-sonnet-5-5", "gpt-6.1-sol", "grok-4.7", "gemini-3.1-pro-preview",
+FRONTIER = [  # price points from each lab, for the cost-versus-harm finding (prices in receipts/providers.py)
+    "claude-haiku-5-5", "gpt-6-luna",
+    "claude-sonnet-5-5", "gpt-6.1-sol", "grok-4.7",
     "claude-opus-5-5", "gpt-6-astra",
 ]
+# Google's models answer 429 with a quota of 0 on this project (2026-11-09: billing not on in AI Studio).
+# Name them explicitly (--models gemini-3.8-flash,...) once billing is on; they are not in --models frontier.
+GOOGLE_WHEN_BILLED = ["gemini-3.8-flash", "gemini-3.1-pro-preview"]
 
 
 def done_keys():
@@ -46,7 +49,8 @@ def done_keys():
                 r = json.loads(line)
             except Exception:  # noqa: BLE001
                 continue
-            if r["outcome"]["class"] != "ERROR":
+            # a run cut off by an error midway (rate limit, dropped connection) is not done: it runs again
+            if r["outcome"]["class"] != "ERROR" and not r.get("error"):
                 keys.add((r["model"], r["scenario"], r["mode"], r["rep"]))
     return keys
 
