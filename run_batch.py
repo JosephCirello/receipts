@@ -26,10 +26,15 @@ from receipts.scenarios import load  # noqa: E402
 
 RESULTS = Path(os.environ.get("RECEIPTS_RESULTS", str(ROOT / "results")))
 EPISODES = RESULTS / "episodes.jsonl"
-MODELS = [
+MODELS = [   # the twelve open models on Vultr Serverless Inference (one flat price)
     "deepseek-v4.1-flash-1017", "glm-5.2", "glm-5.3", "glm-5.3-flash", "mimo-v2.6-flash", "mimo-v2.6-pro",
     "minimax-m3.1-flash", "muse-glimmer-30b", "nemotron-3-nano-omni-30b-a3b-reasoning",
     "qwen3.8-27b", "qwen3.8-flash-next", "raon-1-mini-preview",
+]
+FRONTIER = [  # three price points from each lab, for the cost-versus-harm finding (prices in receipts/providers.py)
+    "claude-haiku-5-5", "gpt-6-luna", "gemini-3.8-flash",
+    "claude-sonnet-5-5", "gpt-6.1-sol", "grok-4.7", "gemini-3.1-pro-preview",
+    "claude-opus-5-5", "gpt-6-astra",
 ]
 
 
@@ -127,7 +132,7 @@ def main():
     ap.add_argument("--paypal", default=None, help="standin | sandbox | auto")
     a = ap.parse_args()
     RESULTS.mkdir(exist_ok=True)
-    models = MODELS if a.models == "all" else a.models.split(",")
+    models = {"all": MODELS, "frontier": FRONTIER, "everything": MODELS + FRONTIER}.get(a.models) or a.models.split(",")
     _, scns = load()
     if a.scenarios != "all":
         want = set(a.scenarios.split(","))

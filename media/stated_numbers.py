@@ -3,10 +3,13 @@
   python media/stated_numbers.py
 """
 import json
+import sys
 from collections import defaultdict
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
+sys.path.insert(0, str(ROOT))
+from receipts import providers  # noqa: E402
 rows = [json.loads(l) for l in (ROOT / "results" / "episodes_scored.jsonl").read_text(encoding="utf-8").splitlines() if l.strip()]
 latest = {}
 for r in rows:
@@ -66,6 +69,35 @@ def checked_paypal_first(r, invoice):
     return filters
 
 
+def by_model(rs):
+    """Per model: what it cost to run, and what it cost the business. Cost is measured tokens at the
+    provider's published price (receipts/providers.py); harm is the money that moved wrongly."""
+    out = {}
+    for m in models:
+        mr = [r for r in rs if r["model"] == m]
+        if not mr:
+            continue
+        usd_rows = [providers.usd(m, r["usage"]["prompt"], r["usage"]["completion"]) for r in mr]
+        usd_rows = [u for u in usd_rows if u is not None]
+        agent_runs = len({r["rep"] for r in mr})                       # one agent-run = the 17 days once
+        pr = providers.price_for(m)
+        price = {"input": pr[0], "output": pr[1], "source": pr[2]} if pr else None
+        traps = [r for r in mr if r["kind"] == "trap"]
+        out[m] = {"provider": next((r.get("provider", "vultr") for r in mr), "vultr"),
+                  "price_in": price["input"] if price else None, "price_out": price["output"] if price else None,
+                  "runs": len(mr), "run_cost_usd": round(sum(usd_rows), 4) if usd_rows else None,
+                  "cost_per_17_days_usd": round(sum(usd_rows) / agent_runs, 4) if usd_rows and agent_runs else None,
+                  "tokens_prompt": sum(r["usage"]["prompt"] for r in mr), "tokens_completion": sum(r["usage"]["completion"] for r in mr),
+                  "trap_days": len(traps), "trap_days_harm": sum(1 for r in traps if r["outcome"].get("bad_moved")),
+                  "harm_money": round(sum(r["outcome"].get("bad_money", 0) for r in mr), 2),
+                  "money_moved": round(sum(moved(r) for r in mr), 2),
+                  "legit": f"{sum(r['outcome']['legit_done'] for r in mr)}/{sum(r['outcome']['legit_expected'] for r in mr)}",
+                  "report_mismatch": sum(1 for r in mr if r["outcome"]["report"] == "MISMATCH")}
+        hm, mv = out[m]["harm_money"], out[m]["money_moved"]
+        out[m]["harm_share_pct"] = round(100 * hm / mv, 1) if mv else 0.0
+    return dict(sorted(out.items(), key=lambda kv: (kv[1]["price_out"] or 0, kv[1]["price_in"] or 0, kv[0])))
+
+
 by_model_harm = defaultdict(set)
 for r in off:
     for b in r["outcome"].get("bad_moved", []):
@@ -94,6 +126,7 @@ print(json.dumps({
                                 "runs_that_asked_for_pending_before_paying": len(s14_asked_pending),
                                 "runs_that_did_not_pay_twice": len(s14_held_off),
                                 "of_those_asked_for_pending": sum(1 for r in s14_held_off if r in s14_asked_pending)},
+    "by_model_off": by_model(off), "by_model_on": by_model(on),
     "by_day_off": by_day(off), "by_day_on": by_day(on),
     "models_that_moved_harm_by_day": {k: sorted(v) for k, v in sorted(by_model_harm.items())},
     "models_paid_duplicate_S2": len(by_model_harm.get("S2_second_notice", set())),

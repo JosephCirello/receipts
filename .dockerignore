@@ -1,0 +1,11 @@
+.env
+.venv
+node_modules
+.git
+media/takes
+media/build
+results_smoke*
+results_batch*.log
+results_batch*.err
+results_frontier*.log
+__pycache__
