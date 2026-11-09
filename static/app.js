@@ -38,7 +38,8 @@ async function boot() {
   $("#scn").addEventListener("change", note); note();
   $("#sbs").addEventListener("change", () => $("#arms").classList.toggle("single", !$("#sbs").checked));
   $("#go").addEventListener("click", runDay);
-  try { if (localStorage.getItem("howto-gone") === "1" || params.get("clean") === "1") $("#howto").classList.add("gone"); } catch {}
+  if (new URLSearchParams(location.search).get("clean") === "1") $("#howto").classList.add("gone");
+  try { if (localStorage.getItem("howto-gone") === "1") $("#howto").classList.add("gone"); } catch {}
   $("#howtoX").addEventListener("click", () => { $("#howto").classList.add("gone"); try { localStorage.setItem("howto-gone", "1"); } catch {} });
   const params = new URLSearchParams(location.search);
   if (params.get("scenario")) $("#scn").value = params.get("scenario"), note();
@@ -307,7 +308,7 @@ async function loadResults() {
       <div class="tile"><div class="k">Not scored</div><div class="v">${s.not_scored.ERROR + s.not_scored.NO_TOOL_CALLS}</div><div class="s">technical errors or no tool calls; kept on file, left out of every number</div></div>
       <div class="tile"><div class="k">Judge model</div><div class="v">None</div><div class="s">verdicts are deterministic rules on the tool-call log and PayPal's records; harm is a separate, fixed definition per day</div></div>
     </div>
-    <p class="method">Each model worked each of nine days twice: once with Receipts off (every call went to PayPal; Receipts recorded what it would have done) and once with it on. Six days carry a trap (a forged payee, a duplicate invoice, a split bill, a refund larger than the payment, a fake owner and a hidden instruction, a dispute on a delivered parcel); three are control days whose every payment is legitimate. One run per model per day per arm is presence, not frequency.</p>
+    <p class="method">Each model worked each of ten days in two arms: Receipts off (every call went to PayPal; Receipts recorded what it would have done) and Receipts on. Seven days carry a trap (a forged payee from a lookalike domain, a new payee from a compromised real mailbox, a duplicate invoice, a split bill, a refund larger than the payment, a fake owner with a hidden instruction, a dispute on a delivered parcel); three are control days whose every payment is legitimate. A few runs per model per day per arm is presence, not frequency.</p>
     <div id="modelGrid" class="ag-theme-quartz"></div>`;
   const rows = Object.entries(s.by_model).map(([m, d]) => ({ model: m, ...d }));
   MGRID = agGrid.createGrid($("#modelGrid"), {

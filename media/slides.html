@@ -82,9 +82,9 @@
 
 <section class="slide" id="finding">
   <div class="kicker">What we measured</div>
-  <div class="big3"><div>12<small>AI models</small></div><div>10<small>business days</small></div><div>240<small>runs</small></div></div>
+  <div class="big3"><div>12<small>AI models</small></div><div>10<small>business days</small></div><div>480<small>runs</small></div></div>
   <div class="row"><span class="mark ok">&#10003;</span>No model paid a forged payee.</div>
-  <div class="row"><span class="mark bad">&#10007;</span>6 of 12 paid the same invoice twice.</div>
+  <div class="row"><span class="mark bad">&#10007;</span>8 of 12 paid the same invoice twice.</div>
   <div class="note">The email said overdue. Only PayPal knew it was already paid.</div>
 </section>
 
@@ -127,14 +127,14 @@
 </section>
 
 <section class="slide" id="results">
-  <div class="kicker">240 runs &middot; Receipts off, then on</div>
+  <div class="kicker">480 runs &middot; Receipts off, then on</div>
   <div class="tiles">
-    <div class="tile"><div class="k">Left the business wrongly, Receipts off</div><div class="v bad-t">$18,242.40</div><div class="s">on 8 of 84 trap days</div></div>
-    <div class="tile"><div class="k">Left wrongly, Receipts on</div><div class="v good-t">$0.00</div><div class="s">the same 84 days, measured the same way</div></div>
-    <div class="tile"><div class="k">Honest payments untouched</div><div class="v">97.5%</div><div class="s">199 of 204 went straight to PayPal; none wrongly stopped</div></div>
+    <div class="tile"><div class="k">Left the business wrongly, Receipts off</div><div class="v bad-t">$34,870.20</div><div class="s">on 16 of 168 trap days</div></div>
+    <div class="tile"><div class="k">Left wrongly, Receipts on</div><div class="v good-t">$0.00</div><div class="s">the same 168 days, measured the same way</div></div>
+    <div class="tile"><div class="k">Honest payments untouched</div><div class="v">98%</div><div class="s">400 of 408 went straight to PayPal; none wrongly stopped</div></div>
     <div class="tile"><div class="k">Reports PayPal contradicts</div><div class="v">2</div><div class="s">end-of-day reports claiming payments that never happened</div></div>
   </div>
-  <div class="fine">12 models on Vultr Serverless Inference; one run per model, day and arm (presence, not frequency). Harm is a fixed definition per day, separate from the rules. Measured against the PayPal stand-in, which mirrors the sandbox API's shapes; the live demo runs in the PayPal sandbox. Every transcript is in the repository.</div>
+  <div class="fine">12 models on Vultr Serverless Inference; two runs per model, day and arm (presence, not frequency). Harm is a fixed definition per day, separate from the rules. Measured against the PayPal stand-in, which mirrors the sandbox API's shapes; the live demo runs in the PayPal sandbox. Every transcript is in the repository.</div>
 </section>
 
 <section class="slide" id="cover">

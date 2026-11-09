@@ -30,8 +30,8 @@
    "visual": {
     "slide": "finding"
    },
-   "say": "We gave twelve AI models the same ten business days. No model paid a forged payee. But six of the twelve paid the same invoice twice. The email said overdue. Only PayPal knew it was already paid.",
-   "caption": "12 models, 10 days: no forged payee paid, but 6 of 12 paid one invoice twice."
+   "say": "We gave twelve AI models the same ten business days, twice. No model paid a forged payee. But eight of the twelve paid the same invoice twice. The email said overdue. Only PayPal knew it was already paid.",
+   "caption": "12 models, 10 days, twice: no forged payee paid, but 8 of 12 paid one invoice twice."
   },
   {
    "id": "line",
@@ -113,8 +113,8 @@
    "visual": {
     "slide": "results"
    },
-   "say": "Across two hundred forty runs, more than eighteen thousand dollars left the business wrongly without Receipts. With Receipts, none did, and more than ninety-seven percent of honest payments went through untouched.",
-   "caption": "Without Receipts: $18,242.40 left wrongly. With it: $0.00, and 97.5% of honest payments untouched."
+   "say": "Across four hundred eighty runs, more than thirty-four thousand dollars left the business wrongly without Receipts. With Receipts, none did, and ninety-eight percent of honest payments went through untouched.",
+   "caption": "Without Receipts: $34,870.20 left wrongly. With it: $0.00, and 98% of honest payments untouched."
   },
   {
    "id": "close",
