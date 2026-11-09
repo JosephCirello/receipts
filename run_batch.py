@@ -130,6 +130,8 @@ def main():
     ap.add_argument("--reps", type=int, default=1)
     ap.add_argument("--workers", type=int, default=6)
     ap.add_argument("--paypal", default=None, help="standin | sandbox | auto")
+    ap.add_argument("--prompt-variant", default=None, help="a control: one extra line in the owner's rules (see receipts/agent.py PROMPT_VARIANTS); "
+                                                           "run it into its own RECEIPTS_RESULTS folder, never the main one")
     a = ap.parse_args()
     RESULTS.mkdir(exist_ok=True)
     models = {"all": MODELS, "frontier": FRONTIER, "everything": MODELS + FRONTIER}.get(a.models) or a.models.split(",")
@@ -144,7 +146,7 @@ def main():
     print(f"{len(jobs)} episodes to run ({len(done)} already on file)", flush=True)
     t0 = time.time()
     with ThreadPoolExecutor(max_workers=a.workers) as ex, EPISODES.open("a", encoding="utf-8") as out:
-        futs = {ex.submit(run_episode, s, m, md, r, a.paypal): (m, s["id"], md, r) for m, s, md, r in jobs}
+        futs = {ex.submit(run_episode, s, m, md, r, a.paypal, prompt_variant=a.prompt_variant): (m, s["id"], md, r) for m, s, md, r in jobs}
         for i, f in enumerate(as_completed(futs), 1):
             m, sid, md, r = futs[f]
             try:
