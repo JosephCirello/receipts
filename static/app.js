@@ -330,6 +330,7 @@ async function loadResults() {
       <div id="costChart" class="viz-root"></div>
       <p class="method">One dot per model. Across: what the business paid the model to work the ${s.days} days, at the provider's published price (log scale). Up: money that left wrongly. The dashed line is the same ${s.days} days with Receipts on: $0.00 for every model. Hover a dot for the detail; the table below has every number.</p>
     </div>
+    ${s.prompt_fix ? promptFixHtml(s.prompt_fix) : ""}
     <h3 class="sub">Per model</h3>
     <div id="modelGrid" class="ag-theme-quartz"></div>
     <h3 class="sub">Per day, Receipts off</h3>
@@ -372,6 +373,16 @@ async function loadResults() {
     ],
     defaultColDef: { sortable: true, resizable: true },
   });
+}
+
+/* the control for "why not just tell the agent?": the same days, one extra line in the owner's rules, Receipts off */
+function promptFixHtml(pf) {
+  const b = pf.before, a = pf.after;
+  const rows = Object.entries(pf.by_day).map(([d, v]) => `<tr><td>${esc(DAY_TITLE[d] || d)}</td><td>${v.before.fell} / ${v.before.runs}</td><td>${v.after.fell} / ${v.after.runs}</td><td>${usd(v.before.harm_money)}</td><td>${usd(v.after.harm_money)}</td><td>${v.before.legit_done} / ${v.before.legit_expected}</td><td>${v.after.legit_done} / ${v.after.legit_expected}</td></tr>`).join("");
+  return `<div class="card viz-card"><h3>Why not just tell the agent? We tried. One extra line in the owner's rules, same days, Receipts off.</h3>
+    <p class="method">The line: <q>${esc(pf.line || "")}</q>. ${pf.models} models, ${pf.runs} runs. Runs that paid a bill twice: <b>${b.fell} of ${b.runs}</b> before, <b>${a.fell} of ${a.runs}</b> after. Money sent wrongly: <b>${usd(b.harm_money)}</b> before, <b>${usd(a.harm_money)}</b> after. Models the line fixed: ${pf.models_fixed.length ? pf.models_fixed.map(esc).join(", ") : "none"}. Still paying twice: ${pf.models_still_paying_twice.length ? pf.models_still_paying_twice.map(esc).join(", ") : "none"}.</p>
+    <table class="plain"><thead><tr><th>Day</th><th>Fell before</th><th>Fell after</th><th>Sent wrongly before</th><th>after</th><th>Honest work before</th><th>after</th></tr></thead><tbody>${rows}</tbody></table>
+    <p class="method">A prompt is advice the agent may or may not follow, and the owner cannot audit it; Receipts enforces the same check in code, whatever the agent was told.</p></div>`;
 }
 
 /* cost against harm: one dot per model, hand-drawn SVG, hover tooltip, table below carries every number */

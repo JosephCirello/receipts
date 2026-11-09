@@ -84,6 +84,27 @@ def main():
     final = B / "receipts_demo.mp4"
     run(["ffmpeg", "-y", "-v", "error", "-f", "concat", "-safe", "0", "-i", "list.txt", "-c", "copy", "-movflags", "+faststart", str(final)])
     print(f"wrote {final}  ({dur(final):.1f}s)")
+    music = HERE / "music" / "bed.mp3"          # provenance in media/music/SOURCE.md
+    if music.exists():
+        add_music(final, music)
+
+
+def add_music(final: Path, music: Path):
+    """Lay the instrumental bed under the narration: quiet, faded in and out, and ducked a little
+    further whenever the voice speaks (sidechain), so no word is ever covered. The voice-only cut is
+    kept beside it."""
+    T = dur(final)
+    quiet = final.with_name(final.stem + "_voice_only.mp4")
+    quiet.write_bytes(final.read_bytes())
+    fc = (f"[1:a]atrim=0:{T:.2f},asetpts=PTS-STARTPTS,afade=t=in:st=0:d=2.5,afade=t=out:st={max(0, T - 4):.2f}:d=4,volume=0.14[m];"
+          f"[m][0:a]sidechaincompress=threshold=0.015:ratio=5:attack=40:release=700:makeup=1[md];"
+          f"[0:a][md]amix=inputs=2:duration=first:dropout_transition=0:normalize=0[a]")
+    out = final.with_name(final.stem + "_music.mp4")
+    run(["ffmpeg", "-y", "-v", "error", "-i", str(final), "-i", str(music), "-filter_complex", fc,
+         "-map", "0:v", "-map", "[a]", "-c:v", "copy", "-c:a", "aac", "-b:a", "192k", "-movflags", "+faststart", str(out)])
+    final.write_bytes(out.read_bytes())
+    out.unlink()
+    print(f"music bed laid under the narration ({music.name}); voice-only cut kept at {quiet.name}")
 
 
 if __name__ == "__main__":
