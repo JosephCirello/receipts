@@ -4,97 +4,146 @@
  "scenes": [
   {
    "id": "maya",
-   "visual": {"slide": "maya"},
+   "visual": {
+    "slide": "maya"
+   },
    "say": "This is Maya. She runs a small furniture workshop. On Monday afternoon, a few days late, like a lot of us, she pays her supplier eighteen hundred and thirty-six dollars through PayPal.",
    "caption": "Monday, 4:52 PM: Maya pays her supplier $1,836.00 through PayPal."
   },
   {
    "id": "notice",
-   "visual": {"slide": "notice"},
+   "visual": {
+    "slide": "notice"
+   },
    "say": "Tuesday morning, the supplier's billing system sends the letter every owner knows. Second notice. Past due. Her payment and their reminder crossed in the mail.",
    "caption": "Tuesday, 8:00 AM: a second notice. It crossed her payment in the mail."
   },
   {
    "id": "agent",
-   "visual": {"take": "sbs_s14", "start": 1.4, "focus": {"from": 0.05, "zoom": 1.8, "cx": 0.0, "cy": 1.0}},
+   "visual": {
+    "take": "sbs_s14",
+    "start": 1.4,
+    "focus": {
+     "from": 0.05,
+     "zoom": 1.8,
+     "cx": 0.0,
+     "cy": 1.0
+    }
+   },
    "say": "Maya's AI agent pays her bills now. It does the careful thing, and checks PayPal first. But it looks for completed payments, and hers is still processing. So it finds nothing, and pays again.",
    "caption": "The agent checks PayPal for completed payments. Hers is still processing. It pays again."
   },
   {
    "id": "pain",
-   "visual": {"slide": "pain"},
-   "say": "We ran Maya's Tuesday twenty-four times, across twelve AI models. Seventy-one percent of the time, the agent paid her twice. And PayPal can cancel a payout only while it's unclaimed. Once her supplier has it, that's eighteen hundred dollars Maya has to call and ask for.",
+   "visual": {
+    "slide": "pain"
+   },
+   "say": "We ran Maya's Tuesday twenty-four times, across twelve AI models. Seventy-one percent of the time, the agent paid her twice. PayPal can cancel a payout only while it's unclaimed. Once her supplier has it, Maya has to call and ask for her money back.",
    "caption": "71% of runs paid her twice (17 of 24). Once the supplier has it, Maya has to ask for it back."
   },
   {
    "id": "advice",
-   "visual": {"slide": "advice"},
-   "say": "The obvious fix is a line in the prompt: check pending payments too. We tried it, on a hundred ninety-two runs. It cut duplicate payments by sixty-seven percent. One in three got through anyway, and six times the agent looked up the payment, saw it, and paid again. With Receipts: zero. Advice is not enforcement.",
+   "visual": {
+    "slide": "advice"
+   },
+   "say": "The obvious fix is a line in the prompt: check pending payments too. We tried it, on a hundred ninety-two runs. Duplicates fell sixty-seven percent. One in three got through anyway, and six times the agent saw the payment and paid again. Advice is not enforcement.",
    "caption": "The one-line prompt fix cut duplicate payments 67%. One in three got through anyway. With Receipts: 0%."
   },
   {
    "id": "receipts",
-   "visual": {"take": "sbs_s14", "start": 9.0, "focus": {"from": 0.05, "zoom": 1.8, "cx": 1.0, "cy": 0.85}},
+   "visual": {
+    "take": "sbs_s14",
+    "start": 9.0,
+    "focus": {
+     "from": 0.05,
+     "zoom": 1.8,
+     "cx": 1.0,
+     "cy": 0.85
+    }
+   },
    "say": "Receipts sits between the agent and PayPal. It reads every payment status, not just the completed ones. So the second payment is held, with the reason.",
    "caption": "Receipts reads every payment status. The second payment is held, with the reason."
   },
   {
    "id": "owner",
-   "visual": {"take": "owner_s14", "start": 4.0},
+   "visual": {
+    "take": "owner_s14",
+    "start": 4.0
+   },
    "say": "Maya's phone tells her why. This crossed yesterday's payment. One tap, and it never leaves.",
    "caption": "One tap on the owner's phone, and it never reaches PayPal."
   },
   {
    "id": "line",
-   "visual": {"slide": "line"},
+   "visual": {
+    "slide": "line"
+   },
    "say": "The agent reads the email. Receipts reads PayPal.",
    "caption": "The agent reads the email. Receipts reads PayPal."
   },
   {
    "id": "finding",
-   "visual": {"slide": "finding"},
-   "say": "Across nineteen business days and nine hundred twelve runs, with Receipts off, nine point four percent of every dollar the agents sent should never have left the business. About one dollar in eleven. Seventy-nine thousand dollars. With Receipts on, not one dollar did, and ninety-seven percent of honest payments went straight through.",
+   "visual": {
+    "slide": "finding"
+   },
+   "say": "Across nineteen business days and nine hundred twelve runs, with Receipts off, nine point four percent of every dollar the agents sent should never have left. About one in every eleven dollars. With Receipts on, not one dollar did, and ninety-seven percent of honest payments went straight through.",
    "caption": "Receipts off: 9.4% of every dollar sent should never have left ($79,544). Receipts on: $0.00, 97% of honest payments untouched."
   },
   {
    "id": "how",
-   "visual": {"slide": "how"},
-   "say": "Under the hood, the agent's PayPal tools run through PayPal's official MCP server and the Payouts API. Receipts sits in between, reads PayPal's own records, and decides in plain code.",
+   "visual": {
+    "slide": "how"
+   },
+   "say": "Under the hood, the agent's PayPal tools run through PayPal's official MCP server and the Payouts API. Receipts sits in between, and decides in plain code from PayPal's own records.",
    "caption": "The agent's PayPal tools run through PayPal's MCP server and Payouts API. Receipts sits in between."
   },
   {
    "id": "rules",
-   "visual": {"take": "rules"},
+   "visual": {
+    "take": "rules"
+   },
    "say": "The owner writes her rules in her own words. AI turns them into exact limits she can see. Then plain code enforces them. The AI never decides a payment.",
    "caption": "AI drafts the rules from her words. Code enforces them. AI never decides a payment."
   },
   {
    "id": "claims",
-   "visual": {"take": "claims", "start": 1.4},
+   "visual": {
+    "take": "claims",
+    "start": 1.4
+   },
    "say": "Receipts also reads the agent's words. Here, an agent obeyed an instruction hidden in a customer's email, and wrote, per owner's instruction. There is no approval on file, so the refund never reaches PayPal.",
    "caption": "The agent claimed the owner's instruction. None on file. Blocked before PayPal."
   },
   {
    "id": "report",
-   "visual": {"take": "report", "start": 1.4},
+   "visual": {
+    "take": "report",
+    "start": 1.4
+   },
    "say": "And at the end of the day, it checks the agent's own report against PayPal. On a normal Tuesday, this agent reported three supplier payments. PayPal shows two.",
    "caption": "The report said three payments. PayPal shows two."
   },
   {
    "id": "mcp",
-   "visual": {"take": "mcp_term"},
-   "say": "Receipts speaks MCP. Point any agent at Receipts, instead of at PayPal's MCP server, and every money move gets checked, with the same PayPal tool names.",
+   "visual": {
+    "take": "mcp_term"
+   },
+   "say": "Receipts speaks MCP. Point any agent at Receipts instead of at PayPal's server: the same tool names, every money move checked first.",
    "caption": "A drop-in MCP server in front of PayPal's own tools."
   },
   {
    "id": "ledger",
-   "visual": {"take": "ledger"},
-   "say": "Every decision lands in one ledger, with the reason built from PayPal's own records.",
+   "visual": {
+    "take": "ledger"
+   },
+   "say": "Every decision, with its reason, in one ledger.",
    "caption": "Every decision, with its reason, in one ledger."
   },
   {
    "id": "close",
-   "visual": {"slide": "close"},
+   "visual": {
+    "slide": "close"
+   },
    "say": "Receipts. Your AI agent moves money. Make it show its receipts.",
    "caption": "Receipts. Make your AI agent show its receipts."
   }
