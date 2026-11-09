@@ -12,3 +12,5 @@ scratch_*
 .env
 *.key
 .paypal_sandbox
+results_promptfix*.log
+results_promptfix*.err
