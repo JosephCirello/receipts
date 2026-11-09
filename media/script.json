@@ -136,8 +136,8 @@
    "visual": {
     "slide": "close"
    },
-   "say": "Receipts. Your AI agent moves money. Make it show its receipts.",
-   "caption": "Receipts. Make your AI agent show its receipts."
+   "say": "Receipts. If your AI agent moves money, make it show its receipts.",
+   "caption": "If your AI agent moves money, make it show its receipts."
   }
  ]
 }

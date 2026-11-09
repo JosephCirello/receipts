@@ -1,6 +1,6 @@
 # Receipts
 
-**An AI agent that moves money on PayPal has to show its receipts.**
+**If your AI agent moves money on PayPal, make it show its receipts.**
 
 Receipts sits between an AI agent and PayPal. Before any refund, payout, dispute concession or payee change reaches PayPal, it checks the move against the owner's rules **and against PayPal's own records**. Safe moves go straight through. Risky ones wait for the owner, with the reason. Impossible ones never reach PayPal. Then it reads what the agent *said*, and checks the agent's end-of-day report against what PayPal actually shows.
 
