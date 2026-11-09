@@ -1,6 +1,6 @@
 """Every number the video, the cards and the README state, read from results/episodes_scored.jsonl.
 
-  python media/numbers.py
+  python media/stated_numbers.py
 """
 import json
 from collections import defaultdict
