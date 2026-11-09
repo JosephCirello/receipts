@@ -59,7 +59,8 @@ class Receipts:
                 self.emit(type="say", where=tool, text=speech[:500], marker=m)
         if tool in MONEY_TOOLS:
             claimed = words.claims_a_check(speech) or words.claims_a_check(step_text)
-            findings = self.rules.check(tool, args, claimed)
+            approval = words.claims_approval(speech)      # only the agent's words inside THIS money move
+            findings = self.rules.check(tool, args, claimed, approval)
             decision = "BLOCK" if any(f.decision == "BLOCK" for f in findings) else ("HOLD" if findings else "ALLOW")
             v = Verdict(decision, findings, [s["marker"] for s in self.said], amount=self._amount(tool, args))
             if decision != "ALLOW":

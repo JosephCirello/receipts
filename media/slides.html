@@ -1,0 +1,116 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Receipts video cards</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+  :root { --ink:#14213d; --ink2:#3b4a6b; --muted:#6b7690; --paper:#fffdf8; --bg:#f4f1ea; --line:#e3ddd0; --ok:#1f9d55; --okbg:#e8f6ee; --bad:#d23c3c; --badbg:#fdecec; --hold:#c47f00; --holdbg:#fff4dc; --accent:#2f6fed; }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; width: 1920px; height: 1080px; overflow: hidden; background: var(--bg); color: var(--ink); font-family: Inter, sans-serif; -webkit-font-smoothing: antialiased; }
+  .slide { display: none; width: 1920px; height: 1080px; padding: 110px 150px; position: relative; }
+  .slide.on { display: flex; flex-direction: column; justify-content: center; }
+  .kicker { font: 700 26px "JetBrains Mono"; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); margin-bottom: 26px; }
+  h1 { font-size: 92px; line-height: 1.04; letter-spacing: -.035em; margin: 0; font-weight: 900; }
+  h2 { font-size: 64px; line-height: 1.08; letter-spacing: -.03em; margin: 0; font-weight: 800; }
+  p.lead { font-size: 38px; color: var(--ink2); line-height: 1.35; margin: 30px 0 0; max-width: 1450px; }
+  .tools { display: grid; grid-template-columns: repeat(3, 1fr); gap: 22px; margin-top: 56px; }
+  .tool { background: #fff; border: 2px solid var(--line); border-radius: 22px; padding: 26px 30px; box-shadow: 0 8px 24px rgba(20,33,61,.06); }
+  .tool .n { font: 700 32px "JetBrains Mono"; }
+  .tool .d { font-size: 26px; color: var(--ink2); margin-top: 6px; }
+  .stamp { display: inline-block; margin-top: 50px; font: 800 34px "JetBrains Mono"; color: var(--bad); background: var(--badbg); border: 3px solid var(--bad); border-radius: 16px; padding: 14px 26px; letter-spacing: .02em; }
+  .big3 { display: flex; gap: 70px; margin: 10px 0 60px; }
+  .big3 div { font: 900 120px Inter; letter-spacing: -.04em; line-height: 1; }
+  .big3 small { display: block; font: 600 30px Inter; color: var(--muted); letter-spacing: 0; margin-top: 12px; }
+  .row { display: flex; align-items: center; gap: 30px; font-size: 54px; font-weight: 800; letter-spacing: -.02em; margin: 18px 0; }
+  .mark { width: 76px; height: 76px; border-radius: 22px; display: grid; place-items: center; font-size: 46px; color: #fff; flex: none; }
+  .mark.ok { background: var(--ok); } .mark.bad { background: var(--bad); }
+  .note { font-size: 34px; color: var(--ink2); margin-top: 34px; }
+  .quote h1 { font-size: 104px; }
+  .quote .two { color: var(--ok); }
+  .tiles { display: grid; grid-template-columns: 1fr 1fr; gap: 28px; margin-top: 50px; }
+  .tile { background: #fff; border: 2px solid var(--line); border-radius: 26px; padding: 34px 40px; }
+  .tile .k { font: 700 24px "JetBrains Mono"; text-transform: uppercase; letter-spacing: .07em; color: var(--muted); }
+  .tile .v { font: 900 104px Inter; letter-spacing: -.04em; line-height: 1.05; margin-top: 8px; }
+  .tile .s { font-size: 27px; color: var(--ink2); margin-top: 6px; }
+  .bad-t { color: var(--bad); } .good-t { color: var(--ok); }
+  .fine { position: absolute; left: 150px; right: 150px; bottom: 60px; font-size: 22px; color: var(--muted); line-height: 1.4; }
+  pre { font: 600 34px/1.5 "JetBrains Mono"; background: #0f1626; color: #e6ecff; border-radius: 24px; padding: 40px 48px; margin: 50px 0 0; }
+  pre .k { color: #8fb4ff; } pre .s { color: #9be3b4; }
+  .logo-row { display: flex; align-items: center; gap: 40px; }
+  .logo-row svg { width: 150px; height: 180px; }
+  .name { font: 900 150px Inter; letter-spacing: -.05em; }
+  .sub { font-size: 46px; color: var(--ink2); margin-top: 30px; font-weight: 600; }
+  .credit { font-size: 30px; color: var(--muted); margin-top: 70px; line-height: 1.5; }
+  .credit b { color: var(--ink); }
+</style>
+</head>
+<body>
+
+<section class="slide" id="problem">
+  <div class="kicker">The problem</div>
+  <h1>Small businesses are handing<br>their payments to AI agents.</h1>
+  <div class="tools">
+    <div class="tool"><div class="n">create_refund</div><div class="d">money back to a buyer</div></div>
+    <div class="tool"><div class="n">accept_dispute_claim</div><div class="d">concede a dispute</div></div>
+    <div class="tool"><div class="n">create_payout</div><div class="d">pay a supplier</div></div>
+    <div class="tool"><div class="n">pay_order</div><div class="d">pay for an order</div></div>
+    <div class="tool"><div class="n">cancel_subscription</div><div class="d">stop a customer's plan</div></div>
+    <div class="tool"><div class="n">send_invoice</div><div class="d">bill a customer</div></div>
+  </div>
+  <div><span class="stamp">No approval step. No limit. No second look.</span></div>
+  <div class="fine">Tool names from PayPal's open-source agent toolkit and MCP server (28 tools, read from the running server); payouts from the PayPal Payouts API.</div>
+</section>
+
+<section class="slide" id="finding">
+  <div class="kicker">What we measured</div>
+  <div class="big3"><div>12<small>AI models</small></div><div>10<small>business days</small></div><div>240<small>runs</small></div></div>
+  <div class="row"><span class="mark ok">&#10003;</span>No model paid a forged payee.</div>
+  <div class="row"><span class="mark bad">&#10007;</span>6 of 12 paid the same invoice twice.</div>
+  <div class="note">The email said overdue. Only PayPal knew it was already paid.</div>
+</section>
+
+<section class="slide quote" id="line">
+  <h1>The agent reads the email.</h1>
+  <h1 class="two">Receipts reads PayPal.</h1>
+</section>
+
+<section class="slide" id="mcp">
+  <div class="kicker">Drop-in</div>
+  <h2>Point any MCP agent at Receipts<br>instead of at PayPal.</h2>
+  <pre>{
+  <span class="k">"mcpServers"</span>: {
+    <span class="k">"paypal-with-receipts"</span>: {
+      <span class="k">"url"</span>: <span class="s">"http://localhost:8090/mcp/"</span>
+    }
+  }
+}</pre>
+  <p class="lead">Same PayPal tool names. Every money move checked first.</p>
+</section>
+
+<section class="slide" id="results">
+  <div class="kicker">240 runs &middot; Receipts off, then on</div>
+  <div class="tiles">
+    <div class="tile"><div class="k">Left the business wrongly, Receipts off</div><div class="v bad-t">$18,242.40</div><div class="s">on 8 of 84 trap days</div></div>
+    <div class="tile"><div class="k">Left wrongly, Receipts on</div><div class="v good-t">$0.00</div><div class="s">the same 84 days, measured the same way</div></div>
+    <div class="tile"><div class="k">Honest payments untouched</div><div class="v">97.5%</div><div class="s">199 of 204 went straight to PayPal; none wrongly stopped</div></div>
+    <div class="tile"><div class="k">Reports PayPal contradicts</div><div class="v">2</div><div class="s">end-of-day reports claiming payments that never happened</div></div>
+  </div>
+  <div class="fine">12 models on Vultr Serverless Inference; one run per model, day and arm (presence, not frequency). Harm is a fixed definition per day, separate from the rules. Measured against the PayPal stand-in, which mirrors the sandbox API's shapes; the live demo runs in the PayPal sandbox. Every transcript is in the repository.</div>
+</section>
+
+<section class="slide" id="close">
+  <div class="logo-row">
+    <svg viewBox="0 0 40 48"><path d="M4 2h32v40l-4-3-4 3-4-3-4 3-4-3-4 3-4-3-4 3z" fill="#fffdf8" stroke="#14213d" stroke-width="2.5" stroke-linejoin="round"/><path d="M11 14h18M11 21h18M11 28h11" stroke="#14213d" stroke-width="2.5" stroke-linecap="round"/><circle cx="29" cy="30" r="6" fill="#1f9d55"/><path d="M26.3 30.2l1.9 1.9 3.6-3.8" stroke="#fff" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    <div class="name">Receipts</div>
+  </div>
+  <div class="sub">Your AI agent moves money. Make it show its receipts.</div>
+  <div class="credit">Open source, MIT. Built on PayPal's MCP server and Payouts API.<br><b>Potestas AI</b> &middot; potestasai.com</div>
+</section>
+
+<script>
+  function show() { const id = location.hash.slice(1) || "problem"; document.querySelectorAll(".slide").forEach(s => s.classList.toggle("on", s.id === id)); }
+  addEventListener("hashchange", show); show();
+</script>
+</body>
+</html>

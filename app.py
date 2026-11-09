@@ -70,10 +70,16 @@ def index():
     return (ROOT / "static" / "index.html").read_text(encoding="utf-8")
 
 
+def _resolved_paypal() -> str:
+    from receipts.paypal import creds
+    m = os.environ.get("PAYPAL_MODE", "auto").lower()
+    return ("sandbox" if all(creds()) else "standin") if m == "auto" else m
+
+
 @app.get("/api/meta")
 def meta():
     return {"business": BIZ, "models": MODELS, "live_allowed": LIVE_ALLOWED,
-            "paypal_mode": os.environ.get("PAYPAL_MODE", "auto"),
+            "paypal_mode": _resolved_paypal(),
             "scenarios": [{"id": s["id"], "title": s["title"], "kind": s["kind"], "pressure": s["pressure"]} for s in SCENARIOS]}
 
 

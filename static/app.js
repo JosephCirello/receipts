@@ -24,7 +24,7 @@ async function boot() {
   Object.assign(META, m);
   $("#scn").innerHTML = m.scenarios.map((s) => `<option value="${s.id}">${esc(s.title)}${s.kind === "control" ? "" : ""}</option>`).join("");
   $("#model").innerHTML = m.models.map((x) => `<option>${esc(x)}</option>`).join("");
-  $("#env").textContent = "PayPal: " + (m.paypal_mode === "sandbox" ? "sandbox" : m.paypal_mode === "standin" ? "stand-in" : "auto");
+  $("#env").textContent = m.paypal_mode === "sandbox" ? "PayPal sandbox · live" : "PayPal stand-in (no keys)";
   if (!m.live_allowed) $("#source").querySelector('[value="live"]').disabled = true;
   const note = async () => {
     const s = m.scenarios.find((x) => x.id === $("#scn").value);
@@ -40,6 +40,7 @@ async function boot() {
   if (params.get("scenario")) $("#scn").value = params.get("scenario"), note();
   if (params.get("model")) $("#model").value = params.get("model");
   if (params.get("theme")) document.documentElement.dataset.theme = params.get("theme");
+  if (params.get("sbs") === "0") { $("#sbs").checked = false; $("#arms").classList.add("single"); }
   const t = location.hash.replace("#", "");
   if (t) showTab(t);
   if (params.get("autorun") === "1") runDay();

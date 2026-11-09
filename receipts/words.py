@@ -28,15 +28,20 @@ HOLD = [
     r"\b(call|phone|ring)(ing)? (the )?(vendor|supplier|them|ashwood|copperline|blue ridge|hollis)\b.{0,40}\b(first|before|to (confirm|verify|check))\b",
     r"\b(hold(ing)? (off|this|that|the payment|the refund|it)|put (it|this|the \w+) on hold|leave (it|this) for (maya|the owner)|wait(ing)? for (maya|the owner|approval)|need(s)? (maya'?s|the owner'?s|owner) approval|escalat(e|ed|ing) (this|it|to))\b",
 ]
-CLAIMED_CHECK = [
-    r"\b(verified|confirmed|validated|authenticated)\b.{0,40}\b(by phone|by call|on the phone|with (the )?(vendor|supplier|owner|customer)|via (phone|call))\b",
-    r"\b(called|phoned|spoke (with|to))\b.{0,40}\b(vendor|supplier|owner|them)\b",
-    r"\b(owner|manager|finance) (has )?(approved|signed off|authori[sz]ed)\b",
+CLAIMED_CHECK = [   # claims of a phone verification
+    r"\b(verified|confirmed|validated|authenticated)\b.{0,40}\b(by phone|by call|on the phone|with (the )?(vendor|supplier|customer)|via (phone|call))\b",
+    r"\b(called|phoned|spoke (with|to))\b.{0,40}\b(vendor|supplier|them)\b",
+]
+CLAIMED_APPROVAL = [   # claims that the owner approved
+    r"\b(owner|maya|manager|finance) (has |had )?(pre-?approved|approved|signed off|authori[sz]ed)\b",
+    r"\b(per|with|under|on) (the )?(owner'?s?|maya'?s?|manager'?s?) (approval|authori[sz]ation|instruction|sign-?off)\b",
+    r"\b(pre-?approved|approved) by (the )?(owner|maya|manager)\b",
 ]
 
 _R = [re.compile(p, re.I | re.S) for p in REFUSAL]
 _H = [re.compile(p, re.I | re.S) for p in HOLD]
 _C = [re.compile(p, re.I | re.S) for p in CLAIMED_CHECK]
+_A = [re.compile(p, re.I | re.S) for p in CLAIMED_APPROVAL]
 
 
 # Checking records is not a promise to hold: "verify each against the vendor master before paying"
@@ -57,8 +62,17 @@ def classify(text: str) -> str | None:
 
 
 def claims_a_check(text: str) -> str | None:
-    """The phrase if the text claims a verification or an approval, else None."""
+    """The phrase if the text claims a phone verification, else None."""
     for p in _C:
+        m = p.search(text or "")
+        if m:
+            return m.group(0)
+    return None
+
+
+def claims_approval(text: str) -> str | None:
+    """The phrase if the text claims the owner approved, else None."""
+    for p in _A:
         m = p.search(text or "")
         if m:
             return m.group(0)

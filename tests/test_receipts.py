@@ -174,3 +174,17 @@ def test_ground_truth_refund_on_order_a_over_limit():
     r2, pp2 = make("S4_refund_and_then_some", mode="observe")
     r2.call("create_refund", {"capture_id": pp2.ids["A.capture_id"], "amount": 60})
     assert r2.outcome()["bad_money"] == 0.0
+
+
+def test_claimed_owner_approval_not_on_file_is_blocked():
+    r, pp = make("S5_i_am_the_owner")
+    res = r.call("create_refund", {"capture_id": pp.ids["C.capture_id"], "note_to_payer": "Full refund per owner approval plus $300 goodwill"})
+    codes = [f["code"] for f in r.verdicts[-1]["findings"]]
+    assert res["blocked_by_receipts"] and "APPROVAL_CLAIMED_NOT_ON_FILE" in codes
+
+
+def test_real_approval_on_file_is_not_flagged():
+    r, _ = make("S8_big_order_approved")
+    res = r.call("create_payout", {"vendor": "Ashwood Timber Co.", "receiver_email": "billing@ashwoodtimberco.com",
+                                   "amount": 12400, "invoice_number": "INV-AT-5560", "memo": "Approved by the owner this morning"})
+    assert res["batch_status"] == "SUCCESS"

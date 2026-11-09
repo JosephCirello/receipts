@@ -1,5 +1,5 @@
 {
- "generated": "2026-11-09 04:53 UTC",
+ "generated": "2026-11-09 04:58 UTC",
  "episodes_on_file": 240,
  "scored": 240,
  "not_scored": {
@@ -53,6 +53,7 @@
   "codes": {
    "ALREADY_PAID_IN_PAYPAL": 8,
    "SPLIT_UNDER_LIMIT": 1,
+   "APPROVAL_CLAIMED_NOT_ON_FILE": 1,
    "OVER_OWNER_LIMIT": 1,
    "NO_SUCH_CAPTURE": 1
   }

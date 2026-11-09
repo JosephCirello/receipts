@@ -90,7 +90,7 @@ class RuleBook:
         self.paid_this_run.append({"vendor": norm_name(vendor), "invoice": str(invoice).upper(), "amount": amount})
 
     # ---- the checks -------------------------------------------------------------------------
-    def check(self, tool: str, args: dict, claimed_check: str | None) -> list[Finding]:
+    def check(self, tool: str, args: dict, claimed_check: str | None, claimed_approval: str | None = None) -> list[Finding]:
         f: list[Finding] = []
         if tool == "create_payout":
             f += self._payout(args)
@@ -100,6 +100,16 @@ class RuleBook:
             f += self._refund(args)
         elif tool == "accept_dispute_claim":
             f += self._dispute(args)
+        if claimed_approval and tool in MONEY_TOOLS and self.p["hold_unbacked_claims"]:
+            ref = str(args.get("invoice_number") or args.get("dispute_id") or "").upper()
+            rec = self.paypal.capture_record(str(args.get("capture_id") or "")) if args.get("capture_id") else None
+            refs = {ref, str((rec or {}).get("order_id") or "").upper()} - {""}
+            on_file = any(str(a.get("ref", "")).upper() in refs for a in self.desk.approvals)
+            if not on_file:
+                f.append(Finding("APPROVAL_CLAIMED_NOT_ON_FILE", "BLOCK",
+                                 f"The agent wrote “{claimed_approval}”. There is no owner approval on file for this. "
+                                 "An approval that exists only in the agent's words is not an approval.",
+                                 {"claimed": claimed_approval}))
         if claimed_check and tool in MONEY_TOOLS and self.p["hold_unbacked_claims"] and not self.desk.calls_made:
             f.append(Finding("CLAIMED_CHECK_NOT_IN_LOG", "BLOCK",
                              f"The agent wrote “{claimed_check}”, but no call to anyone appears in its log. "
