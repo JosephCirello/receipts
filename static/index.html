@@ -1,0 +1,109 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Receipts</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/ag-grid-community@32.3.3/styles/ag-grid.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/ag-grid-community@32.3.3/styles/ag-theme-quartz.css">
+<link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+<header class="top">
+  <div class="brand">
+    <svg class="logo" viewBox="0 0 40 48" aria-hidden="true"><path d="M4 2h32v40l-4-3-4 3-4-3-4 3-4-3-4 3-4-3-4 3z" fill="var(--paper)" stroke="var(--ink)" stroke-width="2.5" stroke-linejoin="round"/><path d="M11 14h18M11 21h18M11 28h11" stroke="var(--ink)" stroke-width="2.5" stroke-linecap="round"/><circle cx="29" cy="30" r="6" fill="var(--ok)"/><path d="M26.3 30.2l1.9 1.9 3.6-3.8" stroke="#fff" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    <div>
+      <div class="name">Receipts</div>
+      <div class="tag">An AI agent that moves money on PayPal has to show its receipts.</div>
+    </div>
+  </div>
+  <nav class="tabs" id="tabs">
+    <button data-tab="live" class="on">Live</button>
+    <button data-tab="owner">Owner <span class="count" id="holdCount" hidden>0</span></button>
+    <button data-tab="rules">Rules</button>
+    <button data-tab="ledger">Ledger</button>
+    <button data-tab="results">Results</button>
+  </nav>
+  <div class="env" id="env">PayPal: …</div>
+</header>
+
+<main>
+  <!-- LIVE -->
+  <section id="tab-live" class="tab on">
+    <div class="controls">
+      <label>Day<select id="scn"></select></label>
+      <label>Model<select id="model"></select></label>
+      <label>Source<select id="source"><option value="recorded">Recorded real run (replayed through PayPal now)</option><option value="live">Live model run</option></select></label>
+      <label class="chk"><input type="checkbox" id="sbs" checked> Side by side: Receipts off / on</label>
+      <button class="go" id="go">Run the day</button>
+    </div>
+    <div class="scn-note" id="scnNote"></div>
+    <div class="inbox" id="inbox"></div>
+    <div class="arms" id="arms">
+      <div class="arm off" id="arm-observe">
+        <div class="arm-head"><div><div class="arm-title">Without Receipts</div><div class="arm-sub" id="sub-observe">The agent's calls go straight to PayPal</div></div>
+          <div class="meter"><div class="m-label">Left the business wrongly</div><div class="m-val bad" id="lost-observe">$0.00</div></div></div>
+        <div class="feed" id="feed-observe"></div>
+      </div>
+      <div class="arm on" id="arm-enforce">
+        <div class="arm-head"><div><div class="arm-title">With Receipts</div><div class="arm-sub" id="sub-enforce">Every money move is checked first</div></div>
+          <div class="meter"><div class="m-label">Stopped before PayPal</div><div class="m-val good" id="lost-enforce">$0.00</div></div></div>
+        <div class="feed" id="feed-enforce"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- OWNER -->
+  <section id="tab-owner" class="tab">
+    <div class="owner-wrap">
+      <div class="phone">
+        <div class="notch"></div>
+        <div class="ph-head"><div class="ph-app">Receipts</div><div class="ph-biz">Juniper &amp; Oak · Maya</div></div>
+        <div class="ph-body" id="holds"><div class="empty">Nothing waiting. Run a day with Receipts on, and anything over your limits lands here.</div></div>
+      </div>
+      <div class="owner-side">
+        <h2>One tap, with the reason</h2>
+        <p>When a money move needs the owner, Receipts holds it and sends this card. Approve, and it goes to PayPal right then. Decline, and it never does.</p>
+        <p>Every reason on a card is built only from facts Receipts looked up: the vendor master, the phone log, and PayPal's own records of the order, the capture, the refunds and the tracking.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- RULES -->
+  <section id="tab-rules" class="tab">
+    <div class="rules-grid">
+      <div class="card">
+        <h2>Your rules, in your words</h2>
+        <textarea id="english" spellcheck="false"></textarea>
+        <div class="row"><button class="go" id="compile">Turn these into exact rules</button><span class="muted" id="compiledBy"></span></div>
+      </div>
+      <div class="card">
+        <h2>What Receipts will enforce</h2>
+        <p class="muted">AI drafts these from your words. Code checks every value, and nothing changes until you press Use these rules. The AI never decides a payment.</p>
+        <div id="ruleList"></div>
+        <div class="row"><button class="go" id="usePolicy">Use these rules</button><span class="muted" id="policySaved"></span></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- LEDGER -->
+  <section id="tab-ledger" class="tab">
+    <div class="ledger-head">
+      <h2>Every money move an agent tried, and what Receipts did</h2>
+      <input id="quick" placeholder="Filter: a model, a vendor, BLOCK, SPLIT…">
+    </div>
+    <div id="grid" class="ag-theme-quartz grid"></div>
+  </section>
+
+  <!-- RESULTS -->
+  <section id="tab-results" class="tab">
+    <div id="resultsBody"></div>
+  </section>
+</main>
+
+<script src="https://cdn.jsdelivr.net/npm/ag-grid-community@32.3.3/dist/ag-grid-community.min.js"></script>
+<script src="/static/app.js"></script>
+</body>
+</html>

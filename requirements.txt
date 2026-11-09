@@ -1,0 +1,8 @@
+fastapi
+uvicorn
+openai
+requests
+mcp>=2.3
+pydantic
+pytest
+playwright
