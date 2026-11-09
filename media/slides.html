@@ -130,6 +130,15 @@
   <div class="fine">Receipts off, two runs per model. PayPal's own list_transactions tool takes a status filter (S completed, P pending); every run that also asked for pending payments found hers and did not pay twice. Payout cancellation: developer.paypal.com, Payouts, Cancel or reverse payouts.</div>
 </section>
 
+<section class="slide" id="advice">
+  <div class="kicker">The obvious fix</div>
+  <h2>"Check pending payments too." One line in the agent's rules. 192 runs.</h2>
+  <div class="big3"><div>33 <span style="font-size:60px;color:var(--muted)">&rarr;</span> 11<small>of 192 runs paid a bill twice</small></div><div class="good-t">8<small>models stopped paying twice</small></div><div class="bad-t">2<small>models paid twice anyway</small></div></div>
+  <div class="row"><span class="mark bad">!</span>Six times, the agent looked up the payment, saw it, and paid again.</div>
+  <div class="note">Advice is not enforcement. Receipts makes the same check in code, whatever the agent was told.</div>
+  <div class="fine">Same eight days (the six second notices and two honest controls), all twelve models, two runs each, Receipts off. One model also started holding honest bills as "possible duplicates". Every run is in results/promptfix_check_pending/.</div>
+</section>
+
 <section class="slide" id="finding">
   <div class="kicker">816 runs &middot; 12 AI models &middot; 17 business days &middot; Receipts off, then on</div>
   <div class="hero"><div class="pct">9.4%</div><div class="what">of every dollar the AI agents sent<br><b>should never have left the business.</b><small>$76,087 of $811,913 &middot; nearly 1 dollar in every 10 &middot; 89% of it, bills paid twice</small></div></div>

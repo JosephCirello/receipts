@@ -104,7 +104,7 @@ def render_slides(base):
     with sync_playwright() as pw:
         br = pw.chromium.launch()
         pg = br.new_page(viewport={"width": W, "height": H})
-        for sid in ("maya", "notice", "pain", "problem", "finding", "line", "how", "mcp", "results", "close", "cover"):
+        for sid in ("maya", "notice", "pain", "advice", "problem", "finding", "line", "how", "mcp", "results", "close", "cover"):
             pg.goto((HERE / "slides.html").as_uri() + "#" + sid)
             pg.wait_for_timeout(900)
             pg.screenshot(path=str(out / f"{sid}.png"))

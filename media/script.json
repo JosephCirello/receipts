@@ -27,6 +27,12 @@
    "caption": "17 of 24 runs paid her twice. Once the supplier has it, Maya has to ask for it back."
   },
   {
+   "id": "advice",
+   "visual": {"slide": "advice"},
+   "say": "The obvious fix is a line in the prompt: check pending payments too. We tried it, on a hundred ninety-two runs. Duplicate payments fell by two thirds. Two models paid twice anyway, and six times the agent looked up the payment, saw it, and paid again. Advice is not enforcement.",
+   "caption": "We tried the one-line prompt fix: 33 of 192 runs paid twice before, 11 after. Two models paid anyway. Advice is not enforcement."
+  },
+  {
    "id": "receipts",
    "visual": {"take": "sbs_s14", "start": 9.0, "focus": {"from": 0.05, "zoom": 1.8, "cx": 1.0, "cy": 0.85}},
    "say": "Receipts sits between the agent and PayPal. It reads every payment status, not just the completed ones. So the second payment is held, with the reason.",
