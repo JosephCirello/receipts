@@ -257,6 +257,15 @@ def _amt(h):
     return a.get("amount")
 
 
+@app.post("/api/reset")
+def reset():
+    """Clear the demo's sessions and holds (the MCP workspace stays)."""
+    for k in [k for k in SESSIONS if k != "mcp"]:
+        SESSIONS.pop(k, None)
+    LIVE_LEDGER.clear()
+    return {"reset": True}
+
+
 @app.post("/api/approve")
 def approve(body: HoldIn):
     s = SESSIONS.get(body.session)

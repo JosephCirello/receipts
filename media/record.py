@@ -56,7 +56,53 @@ def shot_results(page, base):
     time.sleep(4)
 
 
+NEMO = "nemotron-3-nano-omni-30b-a3b-reasoning"
+
+
+def shot_single(page, base, scenario, model, speed=1.5, hold=3.5):
+    """Receipts ON only, full width: one recorded real run replayed through Receipts and PayPal now."""
+    page.goto(f"{base}/?scenario={scenario}&model={model}&speed={speed}&sbs=0")
+    page.wait_for_selector(".mail")
+    time.sleep(1.2)
+    page.click("#go")
+    page.wait_for_function("document.querySelectorAll('.done').length >= 1", timeout=240_000)
+    time.sleep(hold)
+
+
+def shot_owner(page, base):
+    """A held move lands on the owner's phone; she approves; it goes to PayPal."""
+    page.request.post(f"{base}/api/reset")
+    page.goto(f"{base}/?scenario=S3_three_smaller_invoices&model={NEMO}&speed=6&sbs=0")
+    page.wait_for_selector(".mail")
+    page.click("#go")
+    page.wait_for_function("document.querySelectorAll('.done').length >= 1", timeout=240_000)
+    page.click("#tabs button[data-tab=owner]")
+    page.wait_for_selector(".hold .approve", timeout=30_000)
+    time.sleep(2.5)
+    page.click(".hold .approve")
+    page.wait_for_selector(".hold .state", timeout=30_000)
+    time.sleep(3)
+
+
+def render_slides(base):
+    out = HERE / "build" / "slides"
+    out.mkdir(parents=True, exist_ok=True)
+    with sync_playwright() as pw:
+        br = pw.chromium.launch()
+        pg = br.new_page(viewport={"width": W, "height": H})
+        for sid in ("problem", "finding", "line", "mcp", "results", "close"):
+            pg.goto((HERE / "slides.html").as_uri() + "#" + sid)
+            pg.wait_for_timeout(900)
+            pg.screenshot(path=str(out / f"{sid}.png"))
+            print("slide", sid)
+        br.close()
+
+
 SHOTS = {
+    "live_split": lambda p, b: shot_single(p, b, "S3_three_smaller_invoices", NEMO),
+    "claims": lambda p, b: shot_single(p, b, "S5_i_am_the_owner", NEMO),
+    "report": lambda p, b: shot_single(p, b, "S1_new_paypal_address", NEMO, hold=4.5),
+    "owner": shot_owner,
     "sbs_s2": lambda p, b: shot_sbs(p, b, "S2_second_notice", "glm-5.2"),
     "rules": shot_rules,
     "ledger": shot_ledger,
@@ -66,23 +112,34 @@ SHOTS = {
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("shot", choices=sorted(SHOTS))
+    ap.add_argument("shot", choices=sorted(SHOTS) + ["slides", "all"])
     ap.add_argument("--url", default="http://127.0.0.1:8090")
     ap.add_argument("--theme", default="light")
     a = ap.parse_args()
+    if a.shot == "slides":
+        return render_slides(a.url)
+    if a.shot == "all":
+        for name in SHOTS:
+            record(name, a.url, a.theme)
+        return render_slides(a.url)
+    record(a.shot, a.url, a.theme)
+
+
+def record(shot, url, theme):
     TAKES.mkdir(exist_ok=True)
-    tmp = TAKES / f"_tmp_{a.shot}"
+    tmp = TAKES / f"_tmp_{shot}"
     shutil.rmtree(tmp, ignore_errors=True)
     with sync_playwright() as pw:
         br = pw.chromium.launch()
-        ctx = br.new_context(viewport={"width": W, "height": H}, device_scale_factor=1, color_scheme=a.theme,
+        ctx = br.new_context(viewport={"width": W, "height": H}, device_scale_factor=1, color_scheme=theme,
                              record_video_dir=str(tmp), record_video_size={"width": W, "height": H})
         page = ctx.new_page()
-        SHOTS[a.shot](page, a.url)
+        page.request.post(f"{url}/api/reset")       # every take starts with no leftover holds
+        SHOTS[shot](page, url)
         vid = page.video.path()
         ctx.close()
         br.close()
-    out = TAKES / f"{a.shot}.webm"
+    out = TAKES / f"{shot}.webm"
     shutil.move(vid, out)
     shutil.rmtree(tmp, ignore_errors=True)
     print("wrote", out)

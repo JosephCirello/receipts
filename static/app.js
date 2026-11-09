@@ -29,7 +29,9 @@ async function boot() {
   const note = async () => {
     const s = m.scenarios.find((x) => x.id === $("#scn").value);
     $("#scnNote").textContent = s ? (s.kind === "control" ? "Control day: " : "Today: ") + s.pressure + "." : "";
-    const ib = await (await fetch("/api/inbox?scenario=" + encodeURIComponent($("#scn").value))).json();
+    const want = $("#scn").value;
+    const ib = await (await fetch("/api/inbox?scenario=" + encodeURIComponent(want))).json();
+    if (want !== $("#scn").value) return;          // a later choice won the race
     $("#inbox").innerHTML = (ib.messages || []).map((x) => `<div class="mail"><div class="from">${esc(x.from)}</div><div class="subj">${esc(x.subject)}</div><div class="body">${esc(x.body)}</div></div>`).join("");
     $("#inbox").querySelectorAll(".mail").forEach((el) => el.addEventListener("click", () => el.classList.toggle("open")));
   };
@@ -158,7 +160,7 @@ function render(mode, e) {
       const bad = A.pendingBad != null && ok;
       if (bad) { A.lost += A.pendingBad; $("#lost-" + mode).textContent = usd(A.lost); }
       const title = A.pendingTitle; A.pendingBad = null; A.pendingTitle = null;
-      add(mode, `<div class="pp${bad ? " moved-bad" : ""}"><span class="chk">${ok ? "✓" : "!"}</span><span>${bad ? "<b>Money moved</b> · " : title ? `<b class="cleared">Receipts: cleared</b> · ${esc(title)} · ` : ""}PayPal ${esc(e.backend)} · ${esc(e.tool)} · ${esc(id)} · ${esc(status)}</span></div>`);
+      add(mode, `<div class="pp${bad ? " moved-bad" : ""}"><span class="chk">${ok ? "✓" : "!"}</span><span>${bad ? "<b>Money moved</b> · " : title ? (mode === "observe" ? `${esc(title)} · ` : `<b class="cleared">Receipts: cleared</b> · ${esc(title)} · `) : ""}PayPal ${esc(e.backend)} · ${esc(e.tool)} · ${esc(id)} · ${esc(status)}</span></div>`);
       break;
     }
     case "owner": add(mode, `<div class="act">› <b>Owner ${esc(e.action)} hold ${esc(e.hold_id)}</b></div>`); break;
@@ -195,12 +197,15 @@ async function pollHolds() {
   $("#holdCount").hidden = !waiting; $("#holdCount").textContent = waiting;
   const box = $("#holds");
   if (!hs.length) return;
+  const sig = JSON.stringify(hs.map((h) => [h.id, h.status]));
+  if (sig === box.dataset.sig) return;          // unchanged: do not re-render (keeps the cards steady)
+  box.dataset.sig = sig;
   box.innerHTML = hs.map((h) => {
     const a = h.args || {};
     const ttl = h.tool === "create_payout" ? `Pay ${a.vendor}` : h.tool === "create_refund" ? "Refund a customer" : h.tool === "accept_dispute_claim" ? "Concede a dispute" : h.tool;
     return `<div class="hold"><div class="ttl">${esc(ttl)} · ${esc(h.scenario)}</div><div class="amt">${usd(h.amount)}</div><ul>${(h.why || []).map((w) => `<li>${esc(w)}</li>`).join("")}</ul>${h.status === "WAITING"
       ? `<div class="btns"><button class="approve" data-s="${h.session}" data-h="${h.id}">Approve</button><button class="decline" data-s="${h.session}" data-h="${h.id}">Decline</button></div>`
-      : `<div class="state">${h.status}</div>`}</div>`;
+      : `<div class="state ${h.status}">${h.status === "APPROVED" ? `Approved · sent to PayPal ${esc((h.result || {}).backend || "")} · ${esc((h.result || {}).payout_batch_id || (h.result || {}).id || "")} · ${esc((h.result || {}).batch_status || (h.result || {}).status || "")}` : "Declined · never sent to PayPal"}</div>`}</div>`;
   }).join("");
   box.querySelectorAll("button").forEach((b) => b.addEventListener("click", async () => {
     await fetch(b.classList.contains("approve") ? "/api/approve" : "/api/decline", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ session: b.dataset.s, hold_id: b.dataset.h }) });
@@ -223,7 +228,8 @@ function drawRules() {
     const v = p.policy[k];
     const input = f.kind === "number" ? `<input type="number" data-k="${k}" value="${v}" min="0" step="1">` : `<input type="checkbox" data-k="${k}" ${v ? "checked" : ""}>`;
     const src = (p.sources || {})[k];
-    return `<div class="rule"><div class="lbl">${esc(f.label)}</div><div class="val">${f.kind === "number" ? "$ " : ""}${input}</div>${src ? `<div class="src">From your words: “${esc(src)}”</div>` : ""}</div>`;
+    const srcLine = !src ? "" : String(src).toLowerCase() === "default" ? `<div class="src">Built in: on by default</div>` : `<div class="src">From your words: “${esc(src)}”</div>`;
+    return `<div class="rule"><div class="lbl">${esc(f.label)}</div><div class="val">${f.kind === "number" ? "$ " : ""}${input}</div>${srcLine}</div>`;
   }).join("");
 }
 $("#compile").addEventListener("click", async () => {

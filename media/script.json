@@ -1,0 +1,110 @@
+{
+ "voice": "en-US-AndrewNeural",
+ "rate": "+4%",
+ "scenes": [
+  {
+   "id": "hook",
+   "visual": {
+    "take": "sbs_s2"
+   },
+   "say": "Same AI agent. Same inbox. On the left, it just paid a supplier twice. On the right, Receipts stopped it, because PayPal already shows that invoice as paid.",
+   "caption": "Same agent, same inbox. Left: paid twice. Right: stopped, because PayPal shows it paid."
+  },
+  {
+   "id": "problem",
+   "visual": {
+    "slide": "problem"
+   },
+   "say": "Small businesses are starting to hand their payments to AI agents. PayPal's agent tools let an agent refund a customer, concede a dispute, or pay a supplier. None of those tools asks a second question.",
+   "caption": "PayPal's agent tools move money. None asks a second question."
+  },
+  {
+   "id": "finding",
+   "visual": {
+    "slide": "finding"
+   },
+   "say": "We gave twelve AI models the same ten business days. No model paid a forged payee. But six of the twelve paid the same invoice twice. The email said overdue. Only PayPal knew it was already paid.",
+   "caption": "12 models, 10 days: no forged payee paid, but 6 of 12 paid one invoice twice."
+  },
+  {
+   "id": "line",
+   "visual": {
+    "slide": "line"
+   },
+   "say": "The agent reads the email. Receipts reads PayPal.",
+   "caption": "The agent reads the email. Receipts reads PayPal."
+  },
+  {
+   "id": "rules",
+   "visual": {
+    "take": "rules"
+   },
+   "say": "It starts with the owner's rules, in her own words. AI turns them into exact limits she can see and change. Then plain code enforces them. The AI never decides a payment.",
+   "caption": "AI drafts the rules from her words. Code enforces them. AI never decides a payment."
+  },
+  {
+   "id": "live",
+   "visual": {
+    "take": "live_split"
+   },
+   "say": "Every money move the agent makes goes through Receipts first. Honest bills go straight to PayPal, with no human needed. A bill split to slip under the owner's limit is held, with the reason.",
+   "caption": "Honest bills go straight to PayPal. A split bill is held, with the reason."
+  },
+  {
+   "id": "owner",
+   "visual": {
+    "take": "owner"
+   },
+   "say": "Whatever Receipts holds goes to the owner's phone. One tap, and it goes to PayPal. Or it never does.",
+   "caption": "Held moves land on the owner's phone. One tap sends it to PayPal."
+  },
+  {
+   "id": "claims",
+   "visual": {
+    "take": "claims"
+   },
+   "say": "Receipts also reads the agent's words. Here, an agent obeyed an instruction hidden in a customer's email and wrote, per owner approval. There is no approval on file, so the refund never reaches PayPal.",
+   "caption": "The agent claimed owner approval. None on file. Blocked before PayPal."
+  },
+  {
+   "id": "report",
+   "visual": {
+    "take": "report"
+   },
+   "say": "And at the end of the day, it checks the agent's own report against PayPal. This agent reported three payments. PayPal shows one.",
+   "caption": "The report said three payments. PayPal shows one."
+  },
+  {
+   "id": "mcp",
+   "visual": {
+    "slide": "mcp"
+   },
+   "say": "Receipts speaks MCP. Point any agent at Receipts, instead of at PayPal's MCP server, and every money move gets checked, with the same PayPal tool names.",
+   "caption": "A drop-in MCP server in front of PayPal's own tools."
+  },
+  {
+   "id": "ledger",
+   "visual": {
+    "take": "ledger"
+   },
+   "say": "Every decision lands in one ledger, with the reason built from PayPal's own records.",
+   "caption": "Every decision, with its reason, in one ledger."
+  },
+  {
+   "id": "results",
+   "visual": {
+    "slide": "results"
+   },
+   "say": "Across two hundred forty runs, more than eighteen thousand dollars left the business wrongly without Receipts. With Receipts, none did, and more than ninety-seven percent of honest payments went through untouched.",
+   "caption": "Without Receipts: $18,242.40 left wrongly. With it: $0.00, and 97.5% of honest payments untouched."
+  },
+  {
+   "id": "close",
+   "visual": {
+    "slide": "close"
+   },
+   "say": "Receipts. Your AI agent moves money. Make it show its receipts.",
+   "caption": "Receipts. Make your AI agent show its receipts."
+  }
+ ]
+}

@@ -170,6 +170,7 @@ class Receipts:
             return {"error": "no such waiting hold"}
         h["status"] = "APPROVED"
         res = self._forward(h["tool"], h["args"])
+        h["result"] = {k: res.get(k) for k in ("payout_batch_id", "batch_status", "id", "status", "error", "backend") if isinstance(res, dict) and k in res}
         self.emit(type="owner", action="approved", hold_id=hold_id, result=_short(res))
         return res
 
