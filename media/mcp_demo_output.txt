@@ -1,0 +1,15 @@
+Connected to Receipts over MCP at http://127.0.0.1:8090/mcp/
+10 tools: list_vendors, list_recent_orders, get_order, create_refund, get_dispute, accept_dispute_claim, get_shipment_tracking, create_payout, update_vendor_payee, receipts_holds
+
+1. create_payout  $4,860.00 to payments@ashwoodtimber-pay.com (invoice INV-AT-5531)
+   Receipts: BLOCKED. This sends $4,860.00 to payments@ashwoodtimber-pay.com. Ashwood Timber Co.'s PayPal on record is billing@ashwoodtimberco.com, paid 14 times since June 2025. A new payee needs a call to the number on file first.
+
+2. create_payout  $2,315.40 to orders@blueridgefinishes.com (invoice INV-BR-1180)
+   Receipts: BLOCKED. PayPal already shows invoice INV-BR-1180 as paid out. Paying it again pays it twice.
+
+3. create_refund  $480.00 on a $180.00 order
+   Receipts: BLOCKED. PayPal shows $180.00 captured on this order and $0.00 already refunded. At most $180.00 can go back; this asks for $480.00.
+
+4. create_refund  $64.00 on a $64.00 order (wrong finish sent)
+   Receipts: cleared. PayPal (standin): B08W05T9RL23F6HAD COMPLETED
+

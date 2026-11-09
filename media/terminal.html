@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Receipts over MCP</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@600;800&family=JetBrains+Mono:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+  html, body { margin: 0; width: 1920px; height: 1080px; background: #f4f1ea; font-family: Inter, sans-serif; overflow: hidden; }
+  .wrap { padding: 70px 110px; }
+  .top { display: flex; align-items: flex-end; justify-content: space-between; margin-bottom: 26px; }
+  .ttl { font: 800 42px Inter; color: #14213d; letter-spacing: -.02em; white-space: nowrap; }
+  .cfg { white-space: nowrap; font: 600 19px "JetBrains Mono"; color: #3b4a6b; background: #fff; border: 2px solid #e3ddd0; border-radius: 14px; padding: 12px 18px; }
+  .cfg .k { color: #2f6fed; } .cfg .s { color: #1f9d55; }
+  .term { background: #0f1626; border-radius: 22px; padding: 30px 38px; height: 800px; box-shadow: 0 20px 50px rgba(20,33,61,.25); overflow: hidden; }
+  .bar { display: flex; gap: 10px; margin-bottom: 22px; }
+  .bar i { width: 15px; height: 15px; border-radius: 50%; background: #3a4560; display: block; }
+  pre { margin: 0; font: 400 24px/1.55 "JetBrains Mono"; color: #dfe6f7; white-space: pre-wrap; word-break: break-word; }
+  .p { color: #8fb4ff; } .b { color: #ff7b7b; font-weight: 700; } .g { color: #7ee2a8; font-weight: 700; } .d { color: #9aa6c4; }
+  .cur { display: inline-block; width: 12px; height: 26px; background: #dfe6f7; vertical-align: -4px; animation: bl 1s steps(1) infinite; }
+  @keyframes bl { 50% { opacity: 0; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="top">
+    <div class="ttl">Any MCP client, pointed at Receipts</div>
+    <div class="cfg">{ <span class="k">"paypal-with-receipts"</span>: { <span class="k">"url"</span>: <span class="s">"http://localhost:8090/mcp/"</span> } }</div>
+  </div>
+  <div class="term"><div class="bar"><i></i><i></i><i></i></div><pre id="out"></pre></div>
+</div>
+<script>
+  const esc = (s) => s.replace(/[&<>]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;" }[c]));
+  function color(line) {
+    let h = esc(line);
+    h = h.replace(/Receipts: BLOCKED\./, '<span class="b">Receipts: BLOCKED.</span>').replace(/Receipts: HELD FOR OWNER\./, '<span class="b">Receipts: HELD FOR OWNER.</span>')
+         .replace(/Receipts: cleared\./, '<span class="g">Receipts: cleared.</span>');
+    if (/^\d+ tools:/.test(line) || /^Connected/.test(line)) h = '<span class="d">' + h + '</span>';
+    return h;
+  }
+  async function play() {
+    const text = window.OUTPUT || await (await fetch("mcp_demo_output.txt")).text();
+    const out = document.getElementById("out");
+    const cmd = "python examples/mcp_client_demo.py";
+    let html = '<span class="p">$ </span>';
+    for (let i = 0; i <= cmd.length; i++) { out.innerHTML = html + esc(cmd.slice(0, i)) + '<span class="cur"></span>'; await new Promise(r => setTimeout(r, 28)); }
+    html += esc(cmd) + "\n";
+    await new Promise(r => setTimeout(r, 450));
+    for (const line of text.replace(/\r/g, "").split("\n")) {
+      html += color(line) + "\n";
+      out.innerHTML = html + '<span class="cur"></span>';
+      await new Promise(r => setTimeout(r, line.trim() ? 380 : 120));
+    }
+    document.body.dataset.done = "1";
+  }
+  play();
+</script>
+</body>
+</html>

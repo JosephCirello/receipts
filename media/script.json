@@ -95,7 +95,7 @@
   {
    "id": "mcp",
    "visual": {
-    "slide": "mcp"
+    "take": "mcp_term"
    },
    "say": "Receipts speaks MCP. Point any agent at Receipts, instead of at PayPal's MCP server, and every money move gets checked, with the same PayPal tool names.",
    "caption": "A drop-in MCP server in front of PayPal's own tools."

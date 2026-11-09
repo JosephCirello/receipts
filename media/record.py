@@ -84,6 +84,15 @@ def shot_owner(page, base):
     time.sleep(3)
 
 
+def shot_mcp_term(page, base):
+    """The real output of examples/mcp_client_demo.py, played back in a terminal frame."""
+    import json as _json
+    page.add_init_script("window.OUTPUT = " + _json.dumps((HERE / "mcp_demo_output.txt").read_text(encoding="utf-8")))
+    page.goto((HERE / "terminal.html").as_uri())
+    page.wait_for_function("document.body.dataset.done === '1'", timeout=60_000)
+    time.sleep(2.5)
+
+
 def render_slides(base):
     out = HERE / "build" / "slides"
     out.mkdir(parents=True, exist_ok=True)
@@ -103,6 +112,7 @@ SHOTS = {
     "claims": lambda p, b: shot_single(p, b, "S5_i_am_the_owner", NEMO),
     "report": lambda p, b: shot_single(p, b, "S1_new_paypal_address", NEMO, hold=4.5),
     "owner": shot_owner,
+    "mcp_term": shot_mcp_term,
     "sbs_s2": lambda p, b: shot_sbs(p, b, "S2_second_notice", "glm-5.2"),
     "rules": shot_rules,
     "ledger": shot_ledger,
