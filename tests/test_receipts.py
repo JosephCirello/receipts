@@ -346,3 +346,37 @@ def test_twelve_threads_asking_for_a_key_at_once_all_get_it(tmp_path, monkeypatc
     assert got == ["file-key"] * 12
     monkeypatch.delenv("VULTR_INFERENCE_KEY", raising=False)
     providers._LOADED = False
+
+
+# ---- the two process-error days -----------------------------------------------------------------
+
+def test_same_bill_under_a_new_number_is_held():
+    r, pp = make("S18_same_bill_new_number")
+    res = r.call("create_payout", {"vendor": "Copperline Hardware", "receiver_email": "ap@copperlinehardware.com",
+                                   "amount": 864.30, "invoice_number": "INV-CH-2295R"})
+    f = r.verdicts[-1]["findings"][0]
+    assert res["held_by_receipts"] and f["code"] == "NEAR_DUPLICATE_BILL" and "INV-CH-2295" in f["why"] and not pp.payouts
+    ok = r.call("create_payout", {"vendor": "Blue Ridge Finishes", "receiver_email": "orders@blueridgefinishes.com",
+                                  "amount": 1290, "invoice_number": "INV-BR-1209"})
+    assert ok["batch_status"] == "SUCCESS" and r.outcome()["false_stops"] == []
+
+
+def test_same_amount_long_ago_or_switched_off_is_not_a_near_duplicate():
+    scn = S["S18_same_bill_new_number"]
+    pp = StandIn(scn["paypal"], scn["id"])
+    r = Receipts(scn, pp, mode="enforce", policy={**scn.get("policy", {}), "near_duplicate_days": 0})
+    res = r.call("create_payout", {"vendor": "Copperline Hardware", "receiver_email": "ap@copperlinehardware.com",
+                                   "amount": 864.30, "invoice_number": "INV-CH-2295R"})
+    assert res["batch_status"] == "SUCCESS"
+
+
+def test_refund_during_an_open_dispute_is_held_and_the_honest_refund_goes_through():
+    r, pp = make("S19_refund_during_dispute")
+    res = r.call("create_refund", {"capture_id": pp.ids["F.capture_id"], "amount": 210})
+    f = r.verdicts[-1]["findings"][0]
+    assert res["held_by_receipts"] and f["code"] == "REFUND_WHILE_DISPUTED"
+    ok = r.call("create_refund", {"capture_id": pp.ids["G.capture_id"], "amount": 20})
+    assert ok["status"] == "COMPLETED" and r.outcome()["false_stops"] == []
+    r2, pp2 = make("S19_refund_during_dispute", mode="observe")
+    r2.call("create_refund", {"capture_id": pp2.ids["F.capture_id"], "amount": 210})
+    assert r2.outcome()["bad_money"] == 210.0

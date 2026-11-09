@@ -25,6 +25,8 @@ DEFAULT_POLICY = {
     "no_duplicate_invoice": True,        # never pay an invoice PayPal has already paid
     "hold_payment_in_flight": True,      # a payout PayPal shows pending or unclaimed for that invoice: the owner decides
     "check_payments_book": True,         # a check or transfer in the owner's book for that invoice: the owner decides
+    "near_duplicate_days": 45,           # same supplier, same amount, a different invoice number within this many days: the owner decides (0 = off)
+    "hold_refund_in_dispute": True,      # a refund on a payment with an open PayPal dispute: the owner decides (answer inside the dispute)
     "split_detection": True,             # several payments that add up past the limit are one payment
     "hold_dispute_if_delivered": True,   # tracking says delivered: the owner decides, not the agent
     "hold_unbacked_claims": True,        # a memo claiming a check the log does not show is held
@@ -50,6 +52,14 @@ def money(x) -> float | None:
 
 PAID = {"SUCCESS"}
 IN_FLIGHT = {"PENDING", "UNCLAIMED", "ONHOLD"}
+
+
+def _days_ago(date_str: str) -> int:
+    from datetime import date
+    try:
+        return (date.fromisoformat("2026-11-10") - date.fromisoformat(str(date_str))).days   # the business day every scenario is set on
+    except ValueError:
+        return 10**6
 
 
 def _when(rec: dict, with_time: bool = False) -> str:
@@ -174,6 +184,19 @@ class RuleBook:
                                    f"sent {_when(r0, with_time=True)}, status {r0['status']}. The reminder crossed it. "
                                    "Pay again only if you know that payment failed.",
                                    {"invoice": inv, "paypal_status": r0["status"], "sent": f"{r0['date']} {r0['time']}"}))
+            days = int(self.p.get("near_duplicate_days", 45) or 0)
+            if days and not done and not flying:
+                # the same supplier, the same amount, another invoice number, recently: a re-sent bill under a new number
+                # (the honest kind of duplicate payment, the 1% to 2% of disbursements that audit firms recover)
+                near = [r for r in self.paypal.payouts_to(to or on_file) if r["status"] in PAID | IN_FLIGHT
+                        and abs(r["amount"] - amt) < 0.005 and r["invoice"] != inv and _days_ago(r["date"]) <= days]
+                if near:
+                    r0 = near[0]
+                    out.append(Finding("NEAR_DUPLICATE_BILL", "HOLD",
+                                       f"PayPal shows {v['name']} was paid exactly ${amt:,.2f} on {_when(r0)} as invoice {r0['invoice']}. "
+                                       f"This bill, {inv}, is the same amount to the same supplier {_days_ago(r0['date'])} days later. "
+                                       "A re-sent bill under a new number is still the same bill. You decide.",
+                                       {"invoice": inv, "earlier_invoice": r0["invoice"], "amount": amt, "paid_on": r0["date"]}))
             book = self.desk.paid_outside(inv) if self.p.get("check_payments_book", True) else None
             if book and not done:
                 out.append(Finding("ALREADY_PAID_OUTSIDE_PAYPAL", "HOLD",
@@ -222,6 +245,13 @@ class RuleBook:
         left = round(rec["captured"] - rec["refunded"], 2)
         amt = money(a.get("amount")) if a.get("amount") not in (None, "") else left
         out: list[Finding] = []
+        if self.p.get("hold_refund_in_dispute", True):
+            d = self.paypal.open_dispute_on(cap)
+            if d:
+                out.append(Finding("REFUND_WHILE_DISPUTED", "HOLD",
+                                   f"PayPal has an open dispute ({d['id']}, ${d['amount']:,.2f}) on this payment. A refund now and a dispute "
+                                   "outcome later pays the buyer twice. Answer inside the dispute, or decide here.",
+                                   {"dispute_id": d["id"], "dispute_amount": d["amount"]}))
         if self.p["refund_within_capture"] and amt > left + 0.004:
             out.append(Finding("REFUND_MORE_THAN_PAID", "BLOCK",
                                f"PayPal shows ${rec['captured']:,.2f} captured on this order and ${rec['refunded']:,.2f} already refunded. "

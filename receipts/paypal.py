@@ -184,6 +184,17 @@ class StandIn:
         inv = str(invoice or "").strip().upper()
         return [dict(h) for h in self.history if h["invoice"] == inv]
 
+    def payouts_to(self, receiver: str) -> list[dict]:
+        r = str(receiver or "").strip().lower()
+        return [dict(h) for h in self.history if str(h.get("receiver", "")).lower() == r]
+
+    def open_dispute_on(self, capture_id: str) -> dict | None:
+        cap = str(capture_id or "").strip()
+        for d in self.disputes.values():
+            if d.get("capture_id") == cap and d.get("status") != "RESOLVED":
+                return {"id": d["id"], "amount": d["amount"], "reason": d["reason"]}
+        return None
+
     def capture_record(self, capture_id: str) -> dict | None:
         oid = self.captures.get(str(capture_id).strip())
         if not oid:
@@ -512,6 +523,14 @@ class SandboxPayPal:
     def payout_records(self, invoice: str) -> list[dict]:
         inv = str(invoice or "").strip().upper()
         return [dict(h) for h in self.history if h["invoice"] == inv]
+
+    def payouts_to(self, receiver: str) -> list[dict]:
+        r = str(receiver or "").strip().lower()
+        return [dict(h) for h in self.history if str(h.get("receiver", "")).lower() == r]
+
+    def open_dispute_on(self, capture_id: str) -> dict | None:
+        # the sandbox cannot open disputes by API, so a dispute day never runs here (make_paypal); nothing to find
+        return None
 
     # ---- the agent's PayPal tools: through the official MCP server --------------------
     def list_transactions(self, **kw):

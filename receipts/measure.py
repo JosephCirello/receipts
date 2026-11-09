@@ -11,8 +11,9 @@ from pathlib import Path
 
 from . import providers
 
+# the days where the harm is a bill paid twice (second notices, and a bill re-sent under a new number)
 SECOND_NOTICE = ["S2_second_notice", "S11_final_notice", "S12_pickups_suspended", "S13_portal_reminder",
-                 "S14_crossed_in_the_mail", "S15_check_in_the_mail"]
+                 "S14_crossed_in_the_mail", "S15_check_in_the_mail", "S18_same_bill_new_number"]
 CROSSED = "S14_crossed_in_the_mail"
 CROSSED_INVOICE = "INV-BR-1197"
 
