@@ -134,7 +134,7 @@ def _sse(q: queue.Queue):
 
 def _register(r: Receipts, q: queue.Queue, sid: str):
     SESSIONS[sid] = {"r": r, "t": time.time()}
-    q.put({"type": "session", "session": sid, "mode": r.mode, "backend": r.paypal.backend})
+    q.put({"type": "session", "session": sid, "mode": r.mode, "backend": r.paypal.backend, "note": getattr(r.paypal, "note", None)})
 
 
 @app.get("/api/run")

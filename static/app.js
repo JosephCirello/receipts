@@ -124,7 +124,9 @@ const BADGE = { observe: { ALLOW: "WOULD ALLOW", HOLD: "WOULD HOLD", BLOCK: "WOU
 function render(mode, e) {
   const A = ARMS[mode];
   switch (e.type) {
-    case "session": A.session = e.session; $("#sub-" + mode).textContent = (mode === "observe" ? "Calls go straight to PayPal" : "Every money move checked first") + ` · PayPal ${e.backend}`; break;
+    case "session": A.session = e.session; $("#sub-" + mode).textContent = (mode === "observe" ? "Calls go straight to PayPal" : "Every money move checked first") + ` · PayPal ${e.backend}`;
+      if (e.note) add(mode, `<div class="replay-tag">${esc(e.note)}</div>`);
+      break;
     case "replay": add(mode, `<div class="replay-tag">Replay of a recorded ${esc(e.model)} run (${esc((e.recorded_at || "").replace("T", " ").replace("Z", " UTC"))}). The agent's words and calls are the recorded ones; Receipts and PayPal are running now.</div>`); break;
     case "say":
       if (e.where !== "reply") break;

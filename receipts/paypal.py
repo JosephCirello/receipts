@@ -442,5 +442,18 @@ def make_paypal(seed: dict, scenario_id: str, mode: str | None = None, seeded_id
         if seed.get("disputes"):
             # PayPal's sandbox cannot open buyer disputes by API: this day runs on the stand-in, labelled as such.
             return StandIn(seed, scenario_id)
-        return SandboxPayPal(seed, scenario_id, seeded_ids)
+        try:
+            pp = SandboxPayPal(seed, scenario_id, seeded_ids)
+        except Exception as e:  # noqa: BLE001
+            s = StandIn(seed, scenario_id)
+            s.note = f"sandbox unavailable ({type(e).__name__}); this day ran on the stand-in"
+            return s
+        missing = [o["key"] for o in seed.get("orders", []) if f"{o['key']}.capture_id" not in pp.ids]
+        if missing:
+            # e.g. card payments not enabled on the sandbox app: a refund day cannot be real, so say so and use the stand-in
+            pp.close()
+            s = StandIn(seed, scenario_id)
+            s.note = f"sandbox could not capture orders {missing}; this day ran on the stand-in ({'; '.join(pp.seed_log)[:300]})"
+            return s
+        return pp
     return StandIn(seed, scenario_id)
