@@ -13,6 +13,18 @@ Receipts sits between an AI agent and PayPal. Before any refund, payout, dispute
 
 ---
 
+## Why this matters more than a shopping agent
+
+An agent that buys things is the exciting demo. An agent that pays a business's bills and refunds its customers, with nobody checking, is what small businesses are actually switching on, and the losses land on them. Every figure below was read at the named source on 2026-11-09.
+
+**The money is already leaking, with people doing the paying.** Duplicate payments run **1% to 2% of what companies disburse** (industry benchmarks cited by Oversight, HighRadius, FISCAL and NetSuite from APQC and IOFM). **76%** of US organisations were hit by payments fraud in the past year and **74%** by business email compromise (AFP 2026 Payments Fraud and Control Survey); **57%** saw vendor impersonation (AFP 2025). **43.8%** of chargebacks are friendly fraud and **27.1%** of returns are judged abusive (Chargebacks911, 2026 Chargeback Field Report). PayPal's own transaction losses were **0.07% of $1.79 trillion** in volume, up **$223 million (20%)** "mainly due to fraud" (as cited from PayPal's FY2025 report by Chargeback.io). Hand that payment desk to an agent that reads the email and not the ledger, and in our test the leak became **9.4%**.
+
+**The people who run payments say trust is the blocker.** PayPal's own Agentic Commerce Pulse (498 US merchants, surveyed 23 February to 3 March 2026) found data security the largest single barrier to investing in agentic commerce, across every business size, and **95%** of large enterprises expect their payment provider to lead on security, fraud detection and data protection. **93%** of merchants say the AI provider should bear the loss for an agent's wrong purchase (Visa and PYMNTS, 2026), and insurers have begun adding AI exclusions to policies.
+
+**The law is moving the same way, and it asks for the same three things.** California signed SB 813 and AB 1405 on 9 September 2026, a state framework for certifying independent organisations that verify AI systems, and Executive Order N-9-26 (18 September 2026) brought its deadlines forward, with the first recommendations due 16 November 2026. Illinois signed the Artificial Intelligence Safety Measures Act (Public Act 104-0538) on 6 July 2026, in force 1 January 2027: safety frameworks, incident reporting and, from 2028, independent audits. Colorado's AI Act, as amended, takes effect 1 January 2027 for high-risk automated decisions. The EU AI Act's high-risk obligations phase in through 2 August 2027. Different laws, one shape: **independent verification, a record of every decision, and a report that can be checked.**
+
+That is what Receipts produces for an agent that moves money: every money move decided from the system of record, not the agent's say-so; every decision logged with the reason in plain words; the agent's words checked against its deeds; and its end-of-day report checked against PayPal. We make no compliance claim. We built the thing the laws describe, and then measured whether it was needed.
+
 ## The problem, as it happens to a real business
 
 Maya runs a nine-person furniture workshop. On Monday afternoon, a few days late like most of us, she pays a supplier $1,836.00 through PayPal. Tuesday morning the supplier's billing system sends the letter every owner knows: **SECOND NOTICE, past due.** Her payment and their reminder crossed in the mail.
