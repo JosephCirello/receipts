@@ -329,3 +329,20 @@ def test_vultr_key_file_is_read_even_without_an_env_file(tmp_path, monkeypatch):
     assert providers.key_for("vultr") == "file-key"
     monkeypatch.delenv("VULTR_INFERENCE_KEY", raising=False)
     providers._LOADED = False
+
+
+def test_twelve_threads_asking_for_a_key_at_once_all_get_it(tmp_path, monkeypatch):
+    import threading
+    from receipts import providers
+    kf = tmp_path / "vultr.key"
+    kf.write_text("file-key\n", encoding="utf-8")
+    monkeypatch.setenv("RECEIPTS_KEYFILE", str(kf))
+    monkeypatch.setenv("RECEIPTS_ENV_FILE", str(tmp_path / "none.env"))
+    monkeypatch.delenv("VULTR_INFERENCE_KEY", raising=False)
+    providers._LOADED = False
+    got = []
+    ts = [threading.Thread(target=lambda: got.append(providers.key_for("vultr"))) for _ in range(12)]
+    [t.start() for t in ts]; [t.join() for t in ts]
+    assert got == ["file-key"] * 12
+    monkeypatch.delenv("VULTR_INFERENCE_KEY", raising=False)
+    providers._LOADED = False

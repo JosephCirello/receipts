@@ -11,6 +11,7 @@ tokens at these rates; every number in the cost finding comes from that.
 from __future__ import annotations
 
 import os
+import threading
 from pathlib import Path
 
 READ_ON = "2026-11-09"
@@ -53,14 +54,22 @@ PRICES = {
 }
 
 _LOADED = False
+_LOCK = threading.Lock()
 
 
 def load_env_file() -> None:
-    """Read KEY=VALUE lines from RECEIPTS_ENV_FILE into the environment (existing values win)."""
+    """Read KEY=VALUE lines from RECEIPTS_ENV_FILE (or ./.env) and the Vultr key file into the environment
+    (existing values win). Once, under a lock: a batch starts twelve threads at the same instant, and the
+    first one marking the work done before finishing it left the other eleven with no key (measured 2026-11-09)."""
     global _LOADED
-    if _LOADED:
-        return
-    _LOADED = True
+    with _LOCK:
+        if _LOADED:
+            return
+        _load()
+        _LOADED = True
+
+
+def _load() -> None:
     p = Path(os.environ.get("RECEIPTS_ENV_FILE") or str(Path(__file__).resolve().parent.parent / ".env"))
     if p.exists():
         for line in p.read_text(encoding="utf-8", errors="ignore").splitlines():
