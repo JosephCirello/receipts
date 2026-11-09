@@ -9,6 +9,7 @@
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/ag-grid-community@32.3.3/styles/ag-grid.css">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/ag-grid-community@32.3.3/styles/ag-theme-quartz.css">
 <link rel="stylesheet" href="/static/style.css">
+<link rel="icon" href="/static/favicon.svg" type="image/svg+xml">
 </head>
 <body>
 <header class="top">
@@ -32,6 +33,11 @@
 <main>
   <!-- LIVE -->
   <section id="tab-live" class="tab on">
+    <div class="howto" id="howto">
+      <div><b>Same AI agent, same inbox, twice.</b> On the left nothing stands between the agent and PayPal. On the right, Receipts checks every money move against the owner's rules and PayPal's own records first.</div>
+      <ol><li>Pick a day and a model, press <b>Run the day</b>.</li><li>Held moves land on the <b>Owner</b> phone: one tap sends them to PayPal.</li><li><b>Rules</b> turns plain English into what Receipts enforces. <b>Results</b> is the 240-run measurement.</li></ol>
+      <button class="x" id="howtoX" aria-label="Dismiss">&times;</button>
+    </div>
     <div class="controls">
       <label>Day<select id="scn"></select></label>
       <label>Model<select id="model"></select></label>
@@ -94,6 +100,7 @@
       <h2>Every money move an agent tried, and what Receipts did</h2>
       <input id="quick" placeholder="Filter: a model, a vendor, BLOCK, SPLIT…">
     </div>
+    <div class="ledger-sum" id="ledgerSum"></div>
     <div id="grid" class="ag-theme-quartz grid"></div>
   </section>
 

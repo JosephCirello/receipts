@@ -198,3 +198,20 @@ textarea { width: 100%; height: 360px; resize: vertical; padding: 14px; border-r
   .phone { width: 100%; }
   .controls select { min-width: 0; width: 100%; }
 }
+
+/* first-visit how-to strip */
+.howto { position: relative; display: grid; grid-template-columns: 1.1fr 1fr; gap: 24px; align-items: center; margin-bottom: 14px; padding: 16px 52px 16px 20px;
+  border-radius: var(--radius); background: var(--ink); color: var(--paper); font-size: 14.5px; box-shadow: var(--shadow); }
+.howto ol { margin: 0; padding-left: 20px; opacity: .92; }
+.howto li { margin: 2px 0; }
+.howto .x { position: absolute; top: 10px; right: 12px; border: 0; background: transparent; color: var(--paper); font-size: 22px; cursor: pointer; opacity: .7; }
+.howto.gone { display: none; }
+@media (max-width: 900px) { .howto { grid-template-columns: 1fr; } }
+
+/* ledger summary and row accents */
+.ledger-sum { display: flex; gap: 10px; flex-wrap: wrap; margin: 0 0 10px; }
+.ledger-sum .s { background: var(--card); border: 1px solid var(--line); border-radius: 10px; padding: 8px 12px; font-size: 13px; color: var(--ink-2); }
+.ledger-sum .s b { font-size: 18px; margin-right: 6px; color: var(--ink); }
+.ag-theme-quartz .r-BLOCK { box-shadow: inset 4px 0 0 var(--bad); }
+.ag-theme-quartz .r-HOLD { box-shadow: inset 4px 0 0 var(--hold); }
+.ag-theme-quartz .r-ALLOW { box-shadow: inset 4px 0 0 var(--ok); }

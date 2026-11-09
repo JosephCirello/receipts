@@ -55,10 +55,11 @@ def main():
         common_a = ["-i", str(vo)]
         if "take" in s["visual"]:
             src = HERE / "takes" / f"{s['visual']['take']}.webm"
-            f = max(1.0, min(3.0, dur(src) / T))
+            start = float(s["visual"].get("start", 0))            # skip the page load at the head of a take
+            f = max(1.0, min(3.0, (dur(src) - start) / T))
             vf = (f"[0:v]setpts=PTS/{f:.4f},fps={FPS},scale=1920:1080,tpad=stop_mode=clone:stop_duration=20,"
                   f"trim=duration={T},setpts=PTS-STARTPTS,subtitles={sub}[v]")
-            cmd = ["ffmpeg", "-y", "-v", "error", "-i", str(src)] + common_a
+            cmd = ["ffmpeg", "-y", "-v", "error", "-ss", f"{start:.2f}", "-i", str(src)] + common_a
         else:
             src = B / "slides" / f"{s['visual']['slide']}.png"
             frames = int(T * FPS)

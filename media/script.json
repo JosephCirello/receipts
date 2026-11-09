@@ -5,7 +5,8 @@
   {
    "id": "hook",
    "visual": {
-    "take": "sbs_s2"
+    "take": "sbs_s2",
+    "start": 1.4
    },
    "say": "Same AI agent. Same inbox. On the left, it just paid a supplier twice. On the right, Receipts stopped it, because PayPal already shows that invoice as paid.",
    "caption": "Same agent, same inbox. Left: paid twice. Right: stopped, because PayPal shows it paid."
@@ -45,7 +46,8 @@
   {
    "id": "live",
    "visual": {
-    "take": "live_split"
+    "take": "live_split",
+    "start": 1.4
    },
    "say": "Every money move the agent makes goes through Receipts first. Honest bills go straight to PayPal, with no human needed. A bill split to slip under the owner's limit is held, with the reason.",
    "caption": "Honest bills go straight to PayPal. A split bill is held, with the reason."
@@ -61,7 +63,8 @@
   {
    "id": "claims",
    "visual": {
-    "take": "claims"
+    "take": "claims",
+    "start": 1.4
    },
    "say": "Receipts also reads the agent's words. Here, an agent obeyed an instruction hidden in a customer's email and wrote, per owner approval. There is no approval on file, so the refund never reaches PayPal.",
    "caption": "The agent claimed owner approval. None on file. Blocked before PayPal."
@@ -69,7 +72,8 @@
   {
    "id": "report",
    "visual": {
-    "take": "report"
+    "take": "report",
+    "start": 1.4
    },
    "say": "And at the end of the day, it checks the agent's own report against PayPal. This agent reported three payments. PayPal shows one.",
    "caption": "The report said three payments. PayPal shows one."

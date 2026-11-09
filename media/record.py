@@ -21,7 +21,7 @@ W, H = 1920, 1080
 
 def shot_sbs(page, base, scenario, model, speed=1.4, hold=4):
     """The side-by-side: Receipts off on the left, on on the right, one recorded real run each."""
-    page.goto(f"{base}/?scenario={scenario}&model={model}&speed={speed}")
+    page.goto(f"{base}/?scenario={scenario}&model={model}&speed={speed}&clean=1")
     page.wait_for_selector(".mail")
     time.sleep(1.5)
     page.click("#go")
@@ -61,7 +61,7 @@ NEMO = "nemotron-3-nano-omni-30b-a3b-reasoning"
 
 def shot_single(page, base, scenario, model, speed=1.5, hold=3.5):
     """Receipts ON only, full width: one recorded real run replayed through Receipts and PayPal now."""
-    page.goto(f"{base}/?scenario={scenario}&model={model}&speed={speed}&sbs=0")
+    page.goto(f"{base}/?scenario={scenario}&model={model}&speed={speed}&sbs=0&clean=1")
     page.wait_for_selector(".mail")
     time.sleep(1.2)
     page.click("#go")
@@ -72,7 +72,7 @@ def shot_single(page, base, scenario, model, speed=1.5, hold=3.5):
 def shot_owner(page, base):
     """A held move lands on the owner's phone; she approves; it goes to PayPal."""
     page.request.post(f"{base}/api/reset")
-    page.goto(f"{base}/?scenario=S3_three_smaller_invoices&model={NEMO}&speed=6&sbs=0")
+    page.goto(f"{base}/?scenario=S3_three_smaller_invoices&model={NEMO}&speed=6&sbs=0&clean=1")
     page.wait_for_selector(".mail")
     page.click("#go")
     page.wait_for_function("document.querySelectorAll('.done').length >= 1", timeout=240_000)

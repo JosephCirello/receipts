@@ -38,6 +38,8 @@ async function boot() {
   $("#scn").addEventListener("change", note); note();
   $("#sbs").addEventListener("change", () => $("#arms").classList.toggle("single", !$("#sbs").checked));
   $("#go").addEventListener("click", runDay);
+  try { if (localStorage.getItem("howto-gone") === "1" || params.get("clean") === "1") $("#howto").classList.add("gone"); } catch {}
+  $("#howtoX").addEventListener("click", () => { $("#howto").classList.add("gone"); try { localStorage.setItem("howto-gone", "1"); } catch {} });
   const params = new URLSearchParams(location.search);
   if (params.get("scenario")) $("#scn").value = params.get("scenario"), note();
   if (params.get("model")) $("#model").value = params.get("model");
@@ -249,11 +251,17 @@ let GRID = null;
 const chip = (p) => p.value ? `<span class="chip ${p.value}">${p.value}</span>` : "";
 async function loadLedger() {
   const rows = await (await fetch("/api/ledger")).json();
+  const n = (f) => rows.filter(f).length;
+  const stopped = rows.filter((r) => r.decision !== "ALLOW" && r.arm === "Receipts ON").reduce((a, r) => a + (r.amount || 0), 0);
+  $("#ledgerSum").innerHTML = `<div class="s"><b>${rows.length}</b>money moves tried</div><div class="s"><b>${n((r) => r.decision === "ALLOW")}</b>cleared</div>`
+    + `<div class="s"><b>${n((r) => r.decision === "HOLD")}</b>held for the owner</div><div class="s"><b>${n((r) => r.decision === "BLOCK")}</b>stopped</div>`
+    + `<div class="s"><b>${usd(stopped)}</b>stopped or held with Receipts on</div>`;
   if (!GRID) {
     GRID = agGrid.createGrid($("#grid"), {
       rowData: rows,
       columnDefs: [
-        { field: "decision", headerName: "Receipts", cellRenderer: chip, width: 120, filter: true, pinned: "left" },
+        { field: "decision", headerName: "Receipts", cellRenderer: chip, width: 120, filter: true, pinned: "left", sort: "desc",
+          comparator: (a, b) => ({ BLOCK: 2, HOLD: 1, ALLOW: 0 }[a] ?? -1) - ({ BLOCK: 2, HOLD: 1, ALLOW: 0 }[b] ?? -1) },
         { field: "arm", width: 130, filter: true },
         { field: "model", width: 230, filter: true },
         { field: "scenario", width: 220, filter: true },
@@ -270,7 +278,8 @@ async function loadLedger() {
       defaultColDef: { sortable: true, resizable: true },
       animateRows: true,
       pagination: true, paginationPageSize: 50,
-      rowClassRules: { "row-live": (p) => p.data && p.data.live },
+      rowClassRules: { "row-live": (p) => p.data && p.data.live, "r-BLOCK": (p) => p.data && p.data.decision === "BLOCK",
+                       "r-HOLD": (p) => p.data && p.data.decision === "HOLD", "r-ALLOW": (p) => p.data && p.data.decision === "ALLOW" },
     });
     $("#quick").addEventListener("input", (e) => GRID.setGridOption("quickFilterText", e.target.value));
   } else GRID.setGridOption("rowData", rows);
