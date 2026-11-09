@@ -123,8 +123,8 @@
 </section>
 
 <section class="slide" id="pain">
-  <div class="kicker">We ran Maya's Tuesday 24 times</div>
-  <div class="big3"><div class="bad-t">17<small>of 24 runs paid her twice</small></div><div>10<small>of 12 AI models did it</small></div><div>15<small>of the 17 checked PayPal first</small></div></div>
+  <div class="kicker">We ran Maya's Tuesday 24 times, across 12 AI models</div>
+  <div class="big3"><div class="bad-t">71%<small>of runs paid her twice (17 of 24)</small></div><div>83%<small>of the models did it (10 of 12)</small></div><div>88%<small>of those had checked PayPal first (15 of 17)</small></div></div>
   <div class="row"><span class="mark bad">!</span>They looked for completed payments. Hers was still processing.</div>
   <div class="note">PayPal can cancel a payout only while it is unclaimed. Once her supplier has it, Maya has to ask for her money back.</div>
   <div class="fine">Receipts off, two runs per model. PayPal's own list_transactions tool takes a status filter (S completed, P pending); every run that also asked for pending payments found hers and did not pay twice. Payout cancellation: developer.paypal.com, Payouts, Cancel or reverse payouts.</div>
@@ -133,10 +133,10 @@
 <section class="slide" id="advice">
   <div class="kicker">The obvious fix</div>
   <h2>"Check pending payments too." One line in the agent's rules. 192 runs.</h2>
-  <div class="big3"><div>33 <span style="font-size:60px;color:var(--muted)">&rarr;</span> 11<small>of 192 runs paid a bill twice</small></div><div class="good-t">8<small>models stopped paying twice</small></div><div class="bad-t">2<small>models paid twice anyway</small></div></div>
+  <div class="big3"><div>17% <span style="font-size:60px;color:var(--muted)">&rarr;</span> <span class="bad-t">5.7%</span><small>of runs still paid a bill twice</small></div><div class="good-t">&minus;67%<small>duplicate payments cut</small></div><div class="bad-t">1 in 3<small>got through anyway</small></div></div>
   <div class="row"><span class="mark bad">!</span>Six times, the agent looked up the payment, saw it, and paid again.</div>
-  <div class="note">Advice is not enforcement. Receipts makes the same check in code, whatever the agent was told.</div>
-  <div class="fine">Same eight days (the six second notices and two honest controls), all twelve models, two runs each, Receipts off. One model also started holding honest bills as "possible duplicates". Every run is in results/promptfix_check_pending/.</div>
+  <div class="note">With Receipts on the same days: <b>0%</b>. Advice is not enforcement.</div>
+  <div class="fine">33 of 192 runs before, 11 of 192 after; same eight days (the six second notices and two honest controls), all twelve models, two runs each, Receipts off. One model also started holding honest bills as "possible duplicates". Every run is in results/promptfix_check_pending/.</div>
 </section>
 
 <section class="slide" id="finding">

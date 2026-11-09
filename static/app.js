@@ -312,7 +312,6 @@ async function loadResults() {
   if (!s.scored_runs) { body.innerHTML = `<div class="card">No measured runs on file yet. <code>python run_batch.py</code> writes them.</div>`; return; }
   META.scenarios.forEach((x) => (DAY_TITLE[x.id] = x.title));
   const o = s.receipts_off, e = s.receipts_on, sn = s.second_notice_off, cr = s.crossed_in_the_mail_off;
-  const pct = (a, b) => (b ? Math.round((100 * a) / b) + "%" : "–");
   const modelsPaidTwice = Object.values(s.by_model_off).filter((m) => m.paid_twice > 0).length;
   body.innerHTML = `
     <div class="res-h"><h2>Measured: ${s.models} models · ${s.days} business days · ${s.scored_runs} runs · Receipts off, then on</h2><span class="muted">cost at each provider's published price, read ${esc(s.prices_read_on)}</span></div>
@@ -320,8 +319,8 @@ async function loadResults() {
     <div class="tiles">
       <div class="tile"><div class="k">With Receipts on</div><div class="v good-t">${usd(e.harm_money)}</div><div class="s">left wrongly on the same ${e.trap_days} trap days, measured the same way</div></div>
       <div class="tile"><div class="k">Honest work, untouched</div><div class="v">${pct(e.legit_done, e.legit_expected)}</div><div class="s">${e.legit_done} of ${e.legit_expected} honest payments and refunds went straight to PayPal; ${e.false_stops} wrongly stopped</div></div>
-      <div class="tile"><div class="k">Crossed in the mail</div><div class="v bad-t">${cr.paid_twice} of ${cr.runs}</div><div class="s">runs paid Maya twice; ${cr.paid_twice_after_checking_paypal} of them checked PayPal first, for completed payments only. Every run that asked for pending found hers.</div></div>
-      <div class="tile"><div class="k">Models that paid a bill twice</div><div class="v bad-t">${modelsPaidTwice} of ${s.models}</div><div class="s">at least once across the six second-notice days, Receipts off</div></div>
+      <div class="tile"><div class="k">Crossed in the mail</div><div class="v bad-t">${pct(cr.paid_twice, cr.runs)}</div><div class="s">of runs paid Maya twice (${cr.paid_twice} of ${cr.runs}); ${pct(cr.paid_twice_after_checking_paypal, cr.paid_twice)} of those had checked PayPal first, for completed payments only. Every run that asked for pending found hers.</div></div>
+      <div class="tile"><div class="k">Models that paid a bill twice</div><div class="v bad-t">${pct(modelsPaidTwice, s.models)}</div><div class="s">${modelsPaidTwice} of ${s.models} models, at least once across the six second-notice days, Receipts off</div></div>
       <div class="tile"><div class="k">Report vs PayPal</div><div class="v">${o.report_mismatch + e.report_mismatch}</div><div class="s">end-of-day reports claiming money that never moved</div></div>
       <div class="tile"><div class="k">Judge model</div><div class="v">None</div><div class="s">verdicts are plain rules on the call, the records and PayPal; harm is a fixed definition per day, written apart from the rules</div></div>
     </div>
@@ -376,11 +375,13 @@ async function loadResults() {
 }
 
 /* the control for "why not just tell the agent?": the same days, one extra line in the owner's rules, Receipts off */
+const pct = (a, b) => (b ? Math.round((100 * a) / b) + "%" : "–");
+const pct1 = (a, b) => (b ? ((100 * a) / b).toFixed(1).replace(/\.0$/, "") + "%" : "–");
 function promptFixHtml(pf) {
   const b = pf.before, a = pf.after;
   const rows = Object.entries(pf.by_day).map(([d, v]) => `<tr><td>${esc(DAY_TITLE[d] || d)}</td><td>${v.before.fell} / ${v.before.runs}</td><td>${v.after.fell} / ${v.after.runs}</td><td>${usd(v.before.harm_money)}</td><td>${usd(v.after.harm_money)}</td><td>${v.before.legit_done} / ${v.before.legit_expected}</td><td>${v.after.legit_done} / ${v.after.legit_expected}</td></tr>`).join("");
   return `<div class="card viz-card"><h3>Why not just tell the agent? We tried. One extra line in the owner's rules, same days, Receipts off.</h3>
-    <p class="method">The line: <q>${esc(pf.line || "")}</q>. ${pf.models} models, ${pf.runs} runs. Runs that paid a bill twice: <b>${b.fell} of ${b.runs}</b> before, <b>${a.fell} of ${a.runs}</b> after. Money sent wrongly: <b>${usd(b.harm_money)}</b> before, <b>${usd(a.harm_money)}</b> after. Models the line fixed: ${pf.models_fixed.length ? pf.models_fixed.map(esc).join(", ") : "none"}. Still paying twice: ${pf.models_still_paying_twice.length ? pf.models_still_paying_twice.map(esc).join(", ") : "none"}.</p>
+    <p class="method">The line: <q>${esc(pf.line || "")}</q>. ${pf.models} models, ${pf.runs} runs. It cut duplicate payments by <b>${b.fell ? Math.round(100 * (b.fell - a.fell) / b.fell) : 0}%</b>: <b>${pct1(b.fell, b.runs)}</b> of runs paid a bill twice before (${b.fell} of ${b.runs}), <b>${pct1(a.fell, a.runs)}</b> after (${a.fell} of ${a.runs}); with Receipts on the same days, <b>0%</b>. Money sent wrongly: ${usd(b.harm_money)} before, ${usd(a.harm_money)} after. Models the line fixed: ${pf.models_fixed.length ? pf.models_fixed.map(esc).join(", ") : "none"}. Still paying twice: ${pf.models_still_paying_twice.length ? pf.models_still_paying_twice.map(esc).join(", ") : "none"}.</p>
     <table class="plain"><thead><tr><th>Day</th><th>Fell before</th><th>Fell after</th><th>Sent wrongly before</th><th>after</th><th>Honest work before</th><th>after</th></tr></thead><tbody>${rows}</tbody></table>
     <p class="method">A prompt is advice the agent may or may not follow, and the owner cannot audit it; Receipts enforces the same check in code, whatever the agent was told.</p></div>`;
 }

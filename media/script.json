@@ -23,14 +23,14 @@
   {
    "id": "pain",
    "visual": {"slide": "pain"},
-   "say": "We ran Maya's Tuesday twenty-four times, across twelve AI models. Seventeen times, the agent paid her twice. And PayPal can cancel a payout only while it's unclaimed. Once her supplier has it, that's eighteen hundred dollars Maya has to call and ask for.",
-   "caption": "17 of 24 runs paid her twice. Once the supplier has it, Maya has to ask for it back."
+   "say": "We ran Maya's Tuesday twenty-four times, across twelve AI models. Seventy-one percent of the time, the agent paid her twice. And PayPal can cancel a payout only while it's unclaimed. Once her supplier has it, that's eighteen hundred dollars Maya has to call and ask for.",
+   "caption": "71% of runs paid her twice (17 of 24). Once the supplier has it, Maya has to ask for it back."
   },
   {
    "id": "advice",
    "visual": {"slide": "advice"},
-   "say": "The obvious fix is a line in the prompt: check pending payments too. We tried it, on a hundred ninety-two runs. Duplicate payments fell by two thirds. Two models paid twice anyway, and six times the agent looked up the payment, saw it, and paid again. Advice is not enforcement.",
-   "caption": "We tried the one-line prompt fix: 33 of 192 runs paid twice before, 11 after. Two models paid anyway. Advice is not enforcement."
+   "say": "The obvious fix is a line in the prompt: check pending payments too. We tried it, on a hundred ninety-two runs. It cut duplicate payments by sixty-seven percent. One in three got through anyway, and six times the agent looked up the payment, saw it, and paid again. With Receipts: zero. Advice is not enforcement.",
+   "caption": "The one-line prompt fix cut duplicate payments 67%. One in three got through anyway. With Receipts: 0%."
   },
   {
    "id": "receipts",

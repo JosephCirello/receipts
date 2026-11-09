@@ -21,8 +21,8 @@ Maya's AI agent pays her bills now. It does the careful thing and checks PayPal 
 
 We ran Maya's Tuesday 24 times, across 12 AI models (two runs each), with nothing between the agent and PayPal:
 
-- **17 of 24 runs paid her twice.** 10 of the 12 models did it at least once.
-- **15 of those 17 checked PayPal before paying.** All 15 asked only for completed payments.
+- **71% of runs paid her twice** (17 of 24). **83% of the models** did it at least once (10 of 12).
+- **88% of those runs had checked PayPal before paying** (15 of 17). All of them asked only for completed payments.
 - Every run that also asked for *pending* payments found hers, and did not pay twice.
 - PayPal can cancel a payout only while it is unclaimed. Once the supplier has it, Maya has to call and ask for her money back.
 
@@ -50,11 +50,11 @@ Small businesses are handing their payments to AI agents. PayPal's open-source M
 
 **Why not just tell the agent?** We tried. One extra line in the owner's rules, *"Before paying any supplier bill, check PayPal for that invoice number, pending payments included, and check my payments book,"* on the same eight days, all twelve models, Receipts off, 192 runs (`results/promptfix_check_pending/`):
 
-- Runs that paid a bill twice fell from **33 of 192 to 11 of 192**, and the money sent wrongly from $67,807 to $22,177. Eight models stopped paying twice altogether.
-- **Two models paid twice anyway**, 11 times between them. Reading those eleven: in six, the agent asked PayPal for pending payments as told, **saw the earlier payment listed, and paid again**. In two it did not look at all.
+- It **cut duplicate payments by 67%**: 17% of runs paid a bill twice before (33 of 192), 5.7% after (11 of 192). Money sent wrongly fell from $67,807 to $22,177. Eight models stopped paying twice altogether.
+- **One in three got through anyway.** Two models paid twice 11 times between them. Reading those eleven: in six, the agent asked PayPal for pending payments as told, **saw the earlier payment listed, and paid again**. In two it did not look at all.
 - The line had a cost: one model held an honest $512 bill as a "possible duplicate" of an unrelated earlier invoice, and the most careless model skipped honest bills it had paid before (20 of 20 to 16 of 20).
 
-A prompt is advice the agent may or may not follow, and the owner cannot audit it. Receipts makes the same check in code, whatever the agent was told, and it ran the eight days with $0.00 sent wrongly and no honest bill stopped.
+A prompt is advice the agent may or may not follow, and the owner cannot audit it. Receipts makes the same check in code, whatever the agent was told, and it ran the eight days at **0%**: $0.00 sent wrongly and no honest bill stopped.
 
 ## What Receipts checks
 
