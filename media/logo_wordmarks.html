@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><title>Receipts wordmarks</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@800;900&display=swap" rel="stylesheet">
+<style>
+  body { margin: 0; width: 1920px; height: 1080px; font-family: Inter, sans-serif; display: grid; grid-template-columns: 1fr 1fr; grid-template-rows: 1fr 1fr; background: #fffdf8; color: #14213d; }
+  .cell { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 34px; border: 1px solid #ece7dc; position: relative; }
+  .n { position: absolute; top: 28px; left: 34px; font-weight: 800; font-size: 20px; color: #6b7690; letter-spacing: .06em; text-transform: uppercase; }
+  .word { font-weight: 900; font-size: 140px; letter-spacing: -.06em; line-height: 1; position: relative; display: inline-block; }
+  .icon { position: absolute; right: 34px; bottom: 28px; display: flex; gap: 14px; align-items: center; font-size: 16px; color: #6b7690; }
+  .icon svg { width: 56px; height: 56px; }
+  .lock { display: flex; align-items: center; gap: 26px; }
+  .lock svg.r { width: 150px; height: 150px; }
+  .dot { display: inline-block; width: 30px; height: 30px; background: #1f9d55; border-radius: 7px; margin-left: 10px; vertical-align: baseline; position: relative; top: -4px; }
+  .dot::after { content: ""; position: absolute; left: 7px; top: 8px; width: 12px; height: 7px; border-left: 4px solid #fff; border-bottom: 4px solid #fff; transform: rotate(-45deg); }
+  .tear { border-bottom: 6px dashed #c3c2b7; display: inline-block; padding-bottom: 14px; position: relative; }
+  .tear svg { position: absolute; right: -58px; bottom: -22px; width: 52px; height: 52px; }
+</style></head><body>
+
+<div class="cell"><div class="n">1 · the R carries the check (mark + wordmark)</div>
+  <div class="lock">
+    <svg class="r" viewBox="0 0 100 100"><rect width="100" height="100" rx="22" fill="#14213d"/><path d="M26 82V18h22c15 0 24 8 24 20 0 9-5 16-13 19" fill="none" stroke="#fffdf8" stroke-width="13" stroke-linecap="round" stroke-linejoin="round"/><path d="M46 60l12 12 26-28" fill="none" stroke="#2fbf6e" stroke-width="13" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    <div class="word">Receipts</div>
+  </div>
+  <div class="icon"><svg viewBox="0 0 100 100"><rect width="100" height="100" rx="22" fill="#14213d"/><path d="M26 82V18h22c15 0 24 8 24 20 0 9-5 16-13 19" fill="none" stroke="#fffdf8" stroke-width="13" stroke-linecap="round" stroke-linejoin="round"/><path d="M46 60l12 12 26-28" fill="none" stroke="#2fbf6e" stroke-width="13" stroke-linecap="round" stroke-linejoin="round"/></svg>app icon</div>
+</div>
+
+<div class="cell"><div class="n">2 · the period is the proof</div>
+  <div class="word">Receipts<span class="dot"></span></div>
+  <div class="icon"><svg viewBox="0 0 100 100"><rect width="100" height="100" rx="22" fill="#14213d"/><rect x="26" y="26" width="48" height="48" rx="10" fill="#1f9d55"/><path d="M38 51 L47 60 L63 42" fill="none" stroke="#fff" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"/></svg>app icon</div>
+</div>
+
+<div class="cell"><div class="n">3 · the ticket</div>
+  <svg viewBox="0 0 760 230" style="width:1140px;height:345px">
+    <defs><mask id="m"><rect width="760" height="230" fill="#fff"/><g fill="#000">
+      <circle cx="740" cy="20" r="14"/><circle cx="740" cy="58" r="14"/><circle cx="740" cy="96" r="14"/><circle cx="740" cy="134" r="14"/><circle cx="740" cy="172" r="14"/><circle cx="740" cy="210" r="14"/>
+      <circle cx="20" cy="20" r="14"/><circle cx="20" cy="58" r="14"/><circle cx="20" cy="96" r="14"/><circle cx="20" cy="134" r="14"/><circle cx="20" cy="172" r="14"/><circle cx="20" cy="210" r="14"/></g></mask></defs>
+    <rect x="20" y="10" width="720" height="210" rx="22" fill="#14213d" mask="url(#m)"/>
+    <text x="90" y="160" font-family="Inter" font-weight="900" font-size="128" letter-spacing="-8" fill="#fffdf8">Receipt<tspan fill="#2fbf6e">s</tspan></text>
+  </svg>
+  <div class="icon"><svg viewBox="0 0 100 100"><rect width="100" height="100" rx="22" fill="#14213d"/><path d="M18 24h64v52H18z" fill="#fffdf8"/><circle cx="82" cy="37" r="6" fill="#14213d"/><circle cx="82" cy="63" r="6" fill="#14213d"/><circle cx="18" cy="37" r="6" fill="#14213d"/><circle cx="18" cy="63" r="6" fill="#14213d"/><path d="M32 44h28M32 56h18" stroke="#14213d" stroke-width="6" stroke-linecap="round"/><circle cx="66" cy="58" r="8" fill="#1f9d55"/></svg>app icon</div>
+</div>
+
+<div class="cell"><div class="n">4 · the tear line</div>
+  <div class="word tear">Receipts<svg viewBox="0 0 100 100"><circle cx="50" cy="50" r="46" fill="#1f9d55"/><path d="M30 52 L44 66 L72 36" fill="none" stroke="#fff" stroke-width="11" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+  <div class="icon"><svg viewBox="0 0 100 100"><rect width="100" height="100" rx="22" fill="#14213d"/><path d="M20 50h60" stroke="#fffdf8" stroke-width="7" stroke-dasharray="9 9" stroke-linecap="round"/><circle cx="72" cy="68" r="14" fill="#1f9d55"/><path d="M65 68.5l5 5 10-11" fill="none" stroke="#fff" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/></svg>app icon</div>
+</div>
+</body></html>

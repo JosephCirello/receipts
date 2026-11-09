@@ -38,7 +38,7 @@ button, select, input, textarea { font: inherit; color: inherit; }
 .top { position: sticky; top: 0; z-index: 10; display: flex; align-items: center; gap: 24px; padding: 14px 28px;
   background: color-mix(in srgb, var(--bg) 88%, transparent); backdrop-filter: blur(8px); border-bottom: 1px solid var(--line); }
 .brand { display: flex; align-items: center; gap: 12px; min-width: 0; }
-.logo { width: 34px; height: 40px; flex: none; }
+.logo { width: 38px; height: 38px; flex: none; }
 .name { font-weight: 800; font-size: 22px; letter-spacing: -.02em; }
 .tag { color: var(--muted); font-size: 13px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .tabs { display: flex; gap: 4px; margin-left: auto; background: var(--card); padding: 4px; border-radius: 999px; border: 1px solid var(--line); }

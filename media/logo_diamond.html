@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><title>Receipts logo: the diamond</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@800;900&display=swap" rel="stylesheet">
+<style>
+  body { margin: 0; width: 1920px; height: 1080px; font-family: Inter, sans-serif; display: grid; grid-template-columns: 1fr 1fr; grid-template-rows: 1fr 1fr; }
+  .cell { display: flex; align-items: center; justify-content: center; gap: 40px; }
+  .light { background: #fffdf8; color: #14213d; } .dark { background: #0f1626; color: #f4f1ea; }
+  .navy { background: #14213d; color: #fffdf8; }
+  .word { font-weight: 900; font-size: 140px; letter-spacing: -.055em; line-height: 1; }
+  .word small { display: block; font-weight: 800; font-size: 28px; letter-spacing: 0; margin-top: 14px; opacity: .72; }
+  svg.mark { width: 190px; height: 190px; }
+  .favs { display: flex; gap: 40px; align-items: center; }
+  .favs svg { height: 64px; width: 64px; } .favs .s svg { width: 32px; height: 32px; } .favs .xs svg { width: 16px; height: 16px; }
+  .favs span { font-size: 18px; opacity: .7; display: block; margin-top: 8px; text-align: center; }
+</style></head><body>
+
+<!-- outline diamond, navy frame, green check -->
+<div class="cell light">
+  <svg class="mark" viewBox="0 0 100 100"><path d="M50 8 L92 50 L50 92 L8 50 Z" fill="none" stroke="#14213d" stroke-width="9" stroke-linejoin="round"/><path d="M33 51 L45 63 L68 38" fill="none" stroke="#1f9d55" stroke-width="9" stroke-linecap="round" stroke-linejoin="round"/></svg>
+  <div class="word">Receipts<small>If your AI agent moves money, make it show its receipts.</small></div>
+</div>
+
+<!-- solid diamond for the favicon and small uses -->
+<div class="cell dark">
+  <svg class="mark" viewBox="0 0 100 100"><path d="M50 6 L94 50 L50 94 L6 50 Z" fill="#14213d" stroke="#f4f1ea" stroke-width="5" stroke-linejoin="round"/><path d="M33 51 L45 63 L68 38" fill="none" stroke="#2fbf6e" stroke-width="9" stroke-linecap="round" stroke-linejoin="round"/></svg>
+  <div class="word">Receipts<small>If your AI agent moves money, make it show its receipts.</small></div>
+</div>
+
+<!-- on navy: the frame goes cream -->
+<div class="cell navy">
+  <svg class="mark" viewBox="0 0 100 100"><path d="M50 8 L92 50 L50 92 L8 50 Z" fill="none" stroke="#fffdf8" stroke-width="9" stroke-linejoin="round"/><path d="M33 51 L45 63 L68 38" fill="none" stroke="#2fbf6e" stroke-width="9" stroke-linecap="round" stroke-linejoin="round"/></svg>
+  <div class="word">Receipts</div>
+</div>
+
+<!-- sizes: 64, 32, 16 -->
+<div class="cell light">
+  <div class="favs">
+    <div><svg viewBox="0 0 100 100"><path d="M50 6 L94 50 L50 94 L6 50 Z" fill="#14213d"/><path d="M33 51 L45 63 L68 38" fill="none" stroke="#2fbf6e" stroke-width="11" stroke-linecap="round" stroke-linejoin="round"/></svg><span>64 px</span></div>
+    <div class="s"><svg viewBox="0 0 100 100"><path d="M50 6 L94 50 L50 94 L6 50 Z" fill="#14213d"/><path d="M33 51 L45 63 L68 38" fill="none" stroke="#2fbf6e" stroke-width="12" stroke-linecap="round" stroke-linejoin="round"/></svg><span>32 px</span></div>
+    <div class="xs"><svg viewBox="0 0 100 100"><path d="M50 6 L94 50 L50 94 L6 50 Z" fill="#14213d"/><path d="M33 51 L45 63 L68 38" fill="none" stroke="#2fbf6e" stroke-width="14" stroke-linecap="round" stroke-linejoin="round"/></svg><span>16 px</span></div>
+    <div><svg viewBox="0 0 100 100"><path d="M50 8 L92 50 L50 92 L8 50 Z" fill="none" stroke="#14213d" stroke-width="9" stroke-linejoin="round"/><path d="M33 51 L45 63 L68 38" fill="none" stroke="#1f9d55" stroke-width="9" stroke-linecap="round" stroke-linejoin="round"/></svg><span>outline, 64 px</span></div>
+  </div>
+</div>
+</body></html>

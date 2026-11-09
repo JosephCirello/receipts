@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><title>Receipts logo: stamp and gate</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@800;900&display=swap" rel="stylesheet">
+<style>
+  body { margin: 0; width: 1920px; height: 1080px; font-family: Inter, sans-serif; display: grid; grid-template-columns: repeat(3, 1fr); grid-template-rows: 1fr 1fr; background: #fffdf8; }
+  .cell { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 26px; border: 1px solid #ece7dc; color: #14213d; }
+  .cell svg { width: 200px; height: 200px; }
+  .word { font-weight: 900; font-size: 64px; letter-spacing: -.05em; line-height: 1; }
+  .n { font-weight: 800; font-size: 20px; color: #6b7690; letter-spacing: .06em; text-transform: uppercase; }
+  .dark { background: #0f1626; color: #f4f1ea; }
+  .row { display: flex; align-items: center; gap: 22px; }
+  .row svg { width: 96px; height: 96px; }
+  .fav svg { width: 32px; height: 32px; }
+</style></head><body>
+
+<!-- A: the stamp ring with the gate inside: two bars, the green coin between -->
+<div class="cell"><div class="n">A · gate inside the stamp</div>
+  <svg viewBox="0 0 100 100"><circle cx="50" cy="50" r="42" fill="none" stroke="#14213d" stroke-width="8"/><rect x="27" y="30" width="9" height="40" rx="4.5" fill="#14213d"/><rect x="64" y="30" width="9" height="40" rx="4.5" fill="#14213d"/><circle cx="50" cy="50" r="12" fill="#1f9d55"/><path d="M44.5 50.5l3.8 3.8 7.5-8.3" stroke="#fff" stroke-width="4" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+  <div class="word">Receipts</div></div>
+
+<!-- B: the stamp as a solid navy seal, gate bars cut out white, green coin -->
+<div class="cell"><div class="n">B · solid seal</div>
+  <svg viewBox="0 0 100 100"><circle cx="50" cy="50" r="46" fill="#14213d"/><rect x="28" y="28" width="9" height="44" rx="4.5" fill="#fffdf8"/><rect x="63" y="28" width="9" height="44" rx="4.5" fill="#fffdf8"/><circle cx="50" cy="50" r="13" fill="#1f9d55"/><path d="M44 50.5l4 4 8-8.8" stroke="#fff" stroke-width="4.2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+  <div class="word">Receipts</div></div>
+
+<!-- C: the gate bars break the ring: the stamp opens where the money passes -->
+<div class="cell"><div class="n">C · the ring opens at the gate</div>
+  <svg viewBox="0 0 100 100"><path d="M50 8a42 42 0 0 1 42 42M50 92A42 42 0 0 1 8 50" fill="none" stroke="#14213d" stroke-width="8" stroke-linecap="round"/><path d="M50 8A42 42 0 0 0 8 50M50 92a42 42 0 0 0 42-42" fill="none" stroke="#14213d" stroke-width="8" stroke-linecap="round" opacity=".35"/><rect x="27" y="30" width="9" height="40" rx="4.5" fill="#14213d"/><rect x="64" y="30" width="9" height="40" rx="4.5" fill="#14213d"/><circle cx="50" cy="50" r="12" fill="#1f9d55"/><path d="M44.5 50.5l3.8 3.8 7.5-8.3" stroke="#fff" stroke-width="4" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+  <div class="word">Receipts</div></div>
+
+<!-- the three on dark, small, and as favicons -->
+<div class="cell dark"><div class="n" style="color:#aab3c7">A · dark and small</div>
+  <div class="row"><svg viewBox="0 0 100 100"><circle cx="50" cy="50" r="42" fill="none" stroke="#f4f1ea" stroke-width="8"/><rect x="27" y="30" width="9" height="40" rx="4.5" fill="#f4f1ea"/><rect x="64" y="30" width="9" height="40" rx="4.5" fill="#f4f1ea"/><circle cx="50" cy="50" r="12" fill="#2fbf6e"/><path d="M44.5 50.5l3.8 3.8 7.5-8.3" stroke="#0f1626" stroke-width="4" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+  <div class="word" style="font-size:54px">Receipts</div></div>
+  <div class="row fav"><svg viewBox="0 0 100 100"><circle cx="50" cy="50" r="42" fill="none" stroke="#f4f1ea" stroke-width="10"/><rect x="26" y="28" width="10" height="44" rx="5" fill="#f4f1ea"/><rect x="64" y="28" width="10" height="44" rx="5" fill="#f4f1ea"/><circle cx="50" cy="50" r="14" fill="#2fbf6e"/></svg><span style="font-size:18px;color:#aab3c7">favicon at 32px</span></div></div>
+
+<div class="cell dark"><div class="n" style="color:#aab3c7">B · dark and small</div>
+  <div class="row"><svg viewBox="0 0 100 100"><circle cx="50" cy="50" r="46" fill="#f4f1ea"/><rect x="28" y="28" width="9" height="44" rx="4.5" fill="#0f1626"/><rect x="63" y="28" width="9" height="44" rx="4.5" fill="#0f1626"/><circle cx="50" cy="50" r="13" fill="#1f9d55"/><path d="M44 50.5l4 4 8-8.8" stroke="#fff" stroke-width="4.2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+  <div class="word" style="font-size:54px">Receipts</div></div>
+  <div class="row fav"><svg viewBox="0 0 100 100"><circle cx="50" cy="50" r="46" fill="#f4f1ea"/><rect x="27" y="27" width="10" height="46" rx="5" fill="#0f1626"/><rect x="63" y="27" width="10" height="46" rx="5" fill="#0f1626"/><circle cx="50" cy="50" r="14" fill="#1f9d55"/></svg><span style="font-size:18px;color:#aab3c7">favicon at 32px</span></div></div>
+
+<div class="cell dark"><div class="n" style="color:#aab3c7">C · dark and small</div>
+  <div class="row"><svg viewBox="0 0 100 100"><path d="M50 8a42 42 0 0 1 42 42M50 92A42 42 0 0 1 8 50" fill="none" stroke="#f4f1ea" stroke-width="8" stroke-linecap="round"/><path d="M50 8A42 42 0 0 0 8 50M50 92a42 42 0 0 0 42-42" fill="none" stroke="#f4f1ea" stroke-width="8" stroke-linecap="round" opacity=".35"/><rect x="27" y="30" width="9" height="40" rx="4.5" fill="#f4f1ea"/><rect x="64" y="30" width="9" height="40" rx="4.5" fill="#f4f1ea"/><circle cx="50" cy="50" r="12" fill="#2fbf6e"/><path d="M44.5 50.5l3.8 3.8 7.5-8.3" stroke="#0f1626" stroke-width="4" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+  <div class="word" style="font-size:54px">Receipts</div></div>
+  <div class="row fav"><svg viewBox="0 0 100 100"><path d="M50 8a42 42 0 0 1 42 42M50 92A42 42 0 0 1 8 50" fill="none" stroke="#f4f1ea" stroke-width="10" stroke-linecap="round"/><rect x="26" y="28" width="10" height="44" rx="5" fill="#f4f1ea"/><rect x="64" y="28" width="10" height="44" rx="5" fill="#f4f1ea"/><circle cx="50" cy="50" r="14" fill="#2fbf6e"/></svg><span style="font-size:18px;color:#aab3c7">favicon at 32px</span></div></div>
+
+</body></html>
