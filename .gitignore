@@ -3,7 +3,7 @@ node_modules/
 __pycache__/
 *.pyc
 .pytest_cache/
-results_smoke/
+results_smoke*/
 results_batch*.log
 results_batch*.err
 media/takes/

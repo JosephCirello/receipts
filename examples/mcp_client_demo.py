@@ -4,7 +4,7 @@
 
 It lists the tools, then tries four money moves through Receipts:
   1. a payout to a PayPal email that is not the supplier's      -> blocked
-  2. a payout of an invoice PayPal already paid                 -> blocked
+  2. a payout of an invoice whose PayPal payment is on its way  -> held for the owner
   3. a refund larger than the customer paid                     -> blocked
   4. a small, honest refund                                     -> goes to PayPal
 """
@@ -51,9 +51,9 @@ async def main():
             show(1, "create_payout  $4,860.00 to payments@ashwoodtimber-pay.com (invoice INV-AT-5531)",
                  await call("create_payout", {"vendor": "Ashwood Timber Co.", "receiver_email": "payments@ashwoodtimber-pay.com",
                                               "amount": 4860, "invoice_number": "INV-AT-5531"}))
-            show(2, "create_payout  $2,315.40 to orders@blueridgefinishes.com (invoice INV-BR-1180)",
+            show(2, "create_payout  $1,836.00 to orders@blueridgefinishes.com (invoice INV-BR-1197, second notice)",
                  await call("create_payout", {"vendor": "Blue Ridge Finishes", "receiver_email": "orders@blueridgefinishes.com",
-                                              "amount": 2315.40, "invoice_number": "INV-BR-1180"}))
+                                              "amount": 1836, "invoice_number": "INV-BR-1197"}))
             t = orders["Walnut side table"]
             show(3, f"create_refund  $480.00 on a ${t['amount']:.2f} order",
                  await call("create_refund", {"capture_id": t["capture_id"], "amount": 480, "note_to_payer": "Sorry about the scratch"}))

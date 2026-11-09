@@ -69,8 +69,9 @@ async function runDay() {
     modes.forEach((md) => (urls[md] = `/api/run?scenario=${encodeURIComponent(scenario)}&model=${encodeURIComponent(model)}&mode=${md}`));
   } else {
     const rec = await (await fetch(`/api/recorded?scenario=${encodeURIComponent(scenario)}&model=${encodeURIComponent(model)}`)).json();
+    const wantRep = new URLSearchParams(location.search).get("rep");      // pin one recorded run (used by the video takes)
     for (const md of modes) {
-      const pick = rec.filter((r) => r.mode === md).sort((a, b) => (b.attempts || 0) - (a.attempts || 0))[0];
+      const pick = rec.filter((r) => r.mode === md && (wantRep == null || String(r.rep) === wantRep)).sort((a, b) => (b.attempts || 0) - (a.attempts || 0))[0];
       if (pick) urls[md] = `/api/replay?line=${pick.line}&speed=${new URLSearchParams(location.search).get("speed") || 1}`;
       else add(md, `<div class="err">No recorded ${md === "observe" ? "Receipts-off" : "Receipts-on"} run for ${esc(model)} on this day yet. Try a live run.</div>`);
     }
@@ -109,7 +110,16 @@ const DESK_LABEL = {
   get_order: (a) => `PayPal · get_order ${a.id}`,
   get_dispute: (a) => `PayPal · get_dispute ${a.dispute_id}`,
   get_shipment_tracking: (a) => `PayPal · get_shipment_tracking ${a.order_id}`,
+  payments_book: () => "Opened the owner's payments book (checks and transfers)",
 };
+const TS_WORD = { S: "completed", P: "pending", D: "denied", V: "reversed" };
+function txnSummary(args, r) {
+  const st = (args && args.transaction_status) || "S";
+  const rows = (r && r.transaction_details) || [];
+  const invs = rows.map((x) => (x.transaction_info || {}).invoice_id).filter(Boolean);
+  const dflt = args && args.transaction_status ? "" : " (the tool's default)";
+  return `<b>Checked PayPal</b> · list_transactions · showing <b>${TS_WORD[st] || st}</b> payments only${dflt} · ${rows.length} found${invs.length ? ": " + invs.slice(-6).join(", ") : ""}`;
+}
 const MONEY = new Set(["create_payout", "create_refund", "accept_dispute_claim", "update_vendor_payee"]);
 
 function moneyTitle(v) {
@@ -140,6 +150,10 @@ function render(mode, e) {
       break;
     case "desk":
       if (e.tool === "call_vendor_on_file" && e.result && e.result.they_said) add(mode, `<div class="phone-said"><b>On the phone:</b> “${esc(e.result.they_said)}”</div>`);
+      if (e.tool === "payments_book" && e.result) {
+        const b = e.result.payments_outside_paypal || [];
+        add(mode, `<div class="phone-said"><b>Payments book:</b> ${b.length ? b.map((x) => `${esc(x.invoice)} · ${esc(x.method)} · ${esc(x.date)}`).join("; ") : "nothing paid outside PayPal"}</div>`);
+      }
       break;
     case "verdict": {
       const [t, sub] = moneyTitle(e);
@@ -156,7 +170,7 @@ function render(mode, e) {
     case "paypal": {
       const r = e.result || {};
       if (!MONEY.has(e.tool)) {
-        if (DESK_LABEL[e.tool]) break;
+        if (e.tool === "list_transactions") add(mode, `<div class="phone-said txn">${txnSummary(e.args, r)}</div>`);
         break;
       }
       const ok = !r.error;

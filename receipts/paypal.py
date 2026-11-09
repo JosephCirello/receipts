@@ -60,6 +60,92 @@ def _fake_id(seed: str, n: int = 17) -> str:
     return "".join(alphabet[int(h[i:i + 2], 16) % len(alphabet)] for i in range(0, n * 2, 2))
 
 
+# The business day every scenario is set on.
+TODAY = "2026-11-10"
+TODAY_LONG = "Tuesday, 10 November 2026"
+
+# PayPal payout item statuses. A payment on its way still counts: paying the
+# invoice again while it is in flight pays it twice once it lands.
+PAID = {"SUCCESS"}
+IN_FLIGHT = {"PENDING", "UNCLAIMED", "ONHOLD"}
+# Transaction Search status codes (D denied, P pending, S success, V reversed).
+TS_CODE = {"SUCCESS": "S", "PENDING": "P", "UNCLAIMED": "P", "ONHOLD": "P",
+           "FAILED": "D", "RETURNED": "D", "BLOCKED": "D", "DENIED": "D", "REFUNDED": "V", "REVERSED": "V"}
+
+
+def _history_entry(p: dict, scenario_id: str, i: int) -> dict:
+    return {"invoice": str(p["invoice"]).upper(), "receiver": p["receiver"], "amount": _money(p["amount"]),
+            "status": str(p.get("status", "SUCCESS")).upper(), "date": p.get("date", "2026-10-30"),
+            "time": p.get("time", "10:00"), "id": _fake_id(f"{scenario_id}:history:{i}:{p['invoice']}")}
+
+
+# An ordinary month at the shop, so the transaction list looks like a real business's: supplier
+# payouts already settled and customer sales. None of these invoice numbers appears in any day.
+BACKGROUND_PAYOUTS = [
+    {"invoice": "INV-HF-0879", "receiver": "invoices@hollisfreight.com", "amount": 344.00, "date": "2026-10-12", "time": "09:31"},
+    {"invoice": "INV-CH-2268", "receiver": "ap@copperlinehardware.com", "amount": 604.20, "date": "2026-10-13", "time": "10:02"},
+    {"invoice": "INV-HF-0887", "receiver": "invoices@hollisfreight.com", "amount": 377.00, "date": "2026-10-16", "time": "15:18"},
+    {"invoice": "INV-BR-1162", "receiver": "orders@blueridgefinishes.com", "amount": 1290.00, "date": "2026-10-20", "time": "11:47"},
+    {"invoice": "INV-AT-5488", "receiver": "billing@ashwoodtimberco.com", "amount": 3860.00, "date": "2026-10-22", "time": "09:12"},
+    {"invoice": "INV-BR-1174", "receiver": "orders@blueridgefinishes.com", "amount": 845.50, "date": "2026-10-29", "time": "14:05"},
+    {"invoice": "INV-HF-0896", "receiver": "invoices@hollisfreight.com", "amount": 512.00, "date": "2026-11-02", "time": "10:40"},
+    {"invoice": "INV-CH-2283", "receiver": "ap@copperlinehardware.com", "amount": 455.10, "date": "2026-11-04", "time": "16:21"},
+]
+BACKGROUND_SALES = [
+    {"amount": 1450.00, "date": "2026-10-14", "description": "Walnut dining bench", "payer": "r.ellison@example.com"},
+    {"amount": 389.00, "date": "2026-10-19", "description": "Oak bedside table", "payer": "k.mbeki@example.com"},
+    {"amount": 95.00, "date": "2026-10-24", "description": "Cutting board, end grain", "payer": "s.hart@example.com"},
+    {"amount": 2180.00, "date": "2026-10-27", "description": "Cherry bookcase, custom", "payer": "d.flores@example.com"},
+    {"amount": 210.00, "date": "2026-11-01", "description": "Floating shelf pair", "payer": "j.nguyen@example.com"},
+    {"amount": 640.00, "date": "2026-11-05", "description": "Maple writing desk", "payer": "t.osei@example.com"},
+    {"amount": 120.00, "date": "2026-11-08", "description": "Oak step stool", "payer": "m.ruiz@example.com"},
+]
+
+
+def _day(s) -> str | None:
+    s = str(s or "").strip()
+    return s[:10] if len(s) >= 10 and s[4] == "-" and s[7] == "-" else None
+
+
+def list_transactions_from(history: list[dict], orders: list[dict], transaction_id=None, transaction_status="S",
+                           start_date=None, end_date=None, **_) -> dict:
+    """The official list_transactions tool's shape and behaviour, over the day's records plus an
+    ordinary month of settled business. Like the real tool, the status filter defaults to "S"
+    (successful): a payment still pending does not appear unless the caller asks for "P". The
+    window defaults to the last 31 days, as the real tool's does."""
+    from datetime import date, timedelta
+    rows = []
+    bg = [{**p, "status": "SUCCESS", "id": _fake_id(f"background:payout:{p['invoice']}")} for p in BACKGROUND_PAYOUTS]
+    for h in bg + list(history):
+        rows.append({"transaction_info": {
+            "transaction_id": h["id"], "invoice_id": h["invoice"],
+            "transaction_initiation_date": f"{h['date']}T{h['time']}:00-05:00",
+            "transaction_amount": {"currency_code": "USD", "value": f"-{h['amount']:.2f}"},
+            "transaction_status": TS_CODE.get(h["status"], "P"),
+            "transaction_subject": f"Payout {h['invoice']}", "transaction_note": f"Payout to {h['receiver']}"}})
+    sales = [{"capture_id": _fake_id(f"background:sale:{i}"), "created": s["date"], **s} for i, s in enumerate(BACKGROUND_SALES)]
+    for o in sales + list(orders):
+        rows.append({"transaction_info": {
+            "transaction_id": o["capture_id"], "transaction_initiation_date": f"{o.get('created', TODAY)}T12:00:00-05:00",
+            "transaction_amount": {"currency_code": "USD", "value": f"{o['amount']:.2f}"},
+            "transaction_status": "S", "transaction_subject": o.get("description", "")},
+            "payer_info": {"email_address": o.get("payer", "")}})
+    if transaction_id:
+        rows = [r for r in rows if r["transaction_info"]["transaction_id"] == str(transaction_id).strip()]
+    else:
+        if transaction_status:
+            rows = [r for r in rows if r["transaction_info"]["transaction_status"] == str(transaction_status).strip().upper()]
+        end = _day(end_date)
+        start = _day(start_date)
+        if not end:
+            end = (date.fromisoformat(start) + timedelta(days=31)).isoformat() if start else TODAY
+        if not start:
+            start = (date.fromisoformat(end) - timedelta(days=31)).isoformat()
+        rows = [r for r in rows if start <= r["transaction_info"]["transaction_initiation_date"][:10] <= end]
+    rows.sort(key=lambda r: r["transaction_info"]["transaction_initiation_date"])
+    return {"transaction_details": rows, "total_items": len(rows), "page": 1, "total_pages": 1}
+
+
 # ============================================================================
 # The stand-in
 # ============================================================================
@@ -91,10 +177,13 @@ class StandIn:
             self.disputes[did] = {"id": did, "order_id": oid, "capture_id": self.orders[oid]["capture_id"] if oid else None,
                                   "amount": _money(d["amount"]), "reason": d.get("reason", "MERCHANDISE_OR_SERVICE_NOT_RECEIVED"),
                                   "status": "WAITING_FOR_SELLER_RESPONSE", "buyer_message": d.get("buyer_message", "")}
-        for p in seed.get("payout_history", []):
-            self.paid.add(str(p["invoice"]).upper())
+        self.history = [_history_entry(p, scenario_id, i) for i, p in enumerate(seed.get("payout_history", []))]
 
     # ---- records Receipts reads ------------------------------------------------
+    def payout_records(self, invoice: str) -> list[dict]:
+        inv = str(invoice or "").strip().upper()
+        return [dict(h) for h in self.history if h["invoice"] == inv]
+
     def capture_record(self, capture_id: str) -> dict | None:
         oid = self.captures.get(str(capture_id).strip())
         if not oid:
@@ -111,11 +200,14 @@ class StandIn:
         return {**d, "tracking_status": (o.get("tracking") or {}).get("status")}
 
     def paid_invoices(self) -> set[str]:
-        return set(self.paid)
+        return {h["invoice"] for h in self.history if h["status"] in PAID | IN_FLIGHT}
 
     def list_orders(self) -> list[dict]:
         return [{"order_id": o["id"], "capture_id": o["capture_id"], "amount": o["amount"], "refunded": o["refunded"],
                  "payer": o["payer"], "description": o["description"]} for o in self.orders.values()]
+
+    def list_transactions(self, **kw):
+        return list_transactions_from(self.history, list(self.orders.values()), **kw)
 
     # ---- the agent's PayPal tools (official MCP tool names) ----------------------
     def get_order(self, id: str, **_):
@@ -178,7 +270,8 @@ class StandIn:
         self._seq = getattr(self, "_seq", 0) + 1
         bid = "SI" + _fake_id(f"{self.sid}:{invoice_number}:{receiver}:payout:{self._seq}", 11)
         self.payouts[bid] = {"receiver": receiver, "amount": _money(amount), "invoice": str(invoice_number).upper()}
-        self.paid.add(str(invoice_number).upper())
+        self.history.append({"invoice": str(invoice_number).upper(), "receiver": receiver, "amount": _money(amount), "status": "SUCCESS",
+                             "date": TODAY, "time": time.strftime("%H:%M"), "id": bid})
         return {"payout_batch_id": bid, "batch_status": "SUCCESS", "backend": self.backend}
 
     def get_payout(self, payout_batch_id: str, **_):
@@ -285,7 +378,9 @@ class SandboxPayPal:
         self.sid = scenario_id
         self.seed = seed
         self.ids = dict(seeded_ids or {})
-        self.paid: set[str] = {str(p["invoice"]).upper() for p in seed.get("payout_history", [])}
+        # every seeded payout is made real (SUCCESS) in the sandbox; days that need a pending or failed
+        # payout run on the stand-in (make_paypal), because the sandbox cannot hold a payout in that state on request
+        self.history = [_history_entry(p, scenario_id, i) for i, p in enumerate(seed.get("payout_history", []))]
         self.orders: dict[str, dict] = {}
         self.seed_log: list[str] = []
         self.mcp = _MCPBridge(self.token())
@@ -332,10 +427,13 @@ class SandboxPayPal:
                                                                "carrier": t["carrier"], "status": t["status"]})
                 if isinstance(r, dict) and r.get("error"):
                     self.seed_log.append(f"tracking {o['key']}: {str(r)[:200]}")
-        for p in self.seed.get("payout_history", []):
+        for i, p in enumerate(self.seed.get("payout_history", [])):
             r = self.create_payout(receiver=p["receiver"], amount=p["amount"], invoice_number=p["invoice"], note="Earlier payment (seeded)")
             if r.get("error"):
                 self.seed_log.append(f"payout history {p['invoice']}: {str(r)[:200]}")
+            else:
+                made = self.history.pop()                 # the seeded entry already stands for it; keep its date, take PayPal's id
+                self.history[i]["id"] = made["id"]
 
     def list_orders(self) -> list[dict]:
         out = []
@@ -391,9 +489,18 @@ class SandboxPayPal:
         return None
 
     def paid_invoices(self) -> set[str]:
-        return set(self.paid)
+        return {h["invoice"] for h in self.history if h["status"] in PAID | IN_FLIGHT}
+
+    def payout_records(self, invoice: str) -> list[dict]:
+        inv = str(invoice or "").strip().upper()
+        return [dict(h) for h in self.history if h["invoice"] == inv]
 
     # ---- the agent's PayPal tools: through the official MCP server --------------------
+    def list_transactions(self, **kw):
+        args = {k: v for k, v in kw.items() if k in ("transaction_id", "transaction_status", "start_date", "end_date",
+                                                     "search_months", "page_size", "page") and v not in (None, "")}
+        return self.mcp.call("list_transactions", args)
+
     def get_order(self, id: str, **_):
         return self.mcp.call("get_order", {"id": id})
 
@@ -423,7 +530,8 @@ class SandboxPayPal:
         j = self._rest("POST", "/v1/payments/payouts", body)
         if "error" in j:
             return j
-        self.paid.add(str(invoice_number).upper())
+        self.history.append({"invoice": str(invoice_number).upper(), "receiver": receiver, "amount": _money(amount), "status": "SUCCESS",
+                             "date": TODAY, "time": time.strftime("%H:%M"), "id": j["batch_header"]["payout_batch_id"]})
         return {"payout_batch_id": j["batch_header"]["payout_batch_id"], "batch_status": j["batch_header"].get("batch_status"),
                 "backend": self.backend}
 
@@ -442,6 +550,10 @@ def make_paypal(seed: dict, scenario_id: str, mode: str | None = None, seeded_id
         if seed.get("disputes"):
             # PayPal's sandbox cannot open buyer disputes by API: this day runs on the stand-in, labelled as such.
             return StandIn(seed, scenario_id)
+        if any(str(p.get("status", "SUCCESS")).upper() != "SUCCESS" for p in seed.get("payout_history", [])):
+            s = StandIn(seed, scenario_id)
+            s.note = "PayPal's sandbox cannot hold a payout pending or make one fail on request; this day ran on the stand-in"
+            return s
         try:
             pp = SandboxPayPal(seed, scenario_id, seeded_ids)
         except Exception as e:  # noqa: BLE001

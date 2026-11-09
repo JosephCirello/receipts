@@ -19,9 +19,9 @@ TAKES = HERE / "takes"
 W, H = 1920, 1080
 
 
-def shot_sbs(page, base, scenario, model, speed=1.4, hold=4):
+def shot_sbs(page, base, scenario, model, speed=1.4, hold=4, rep=None):
     """The side-by-side: Receipts off on the left, on on the right, one recorded real run each."""
-    page.goto(f"{base}/?scenario={scenario}&model={model}&speed={speed}&clean=1")
+    page.goto(f"{base}/?scenario={scenario}&model={model}&speed={speed}&clean=1" + (f"&rep={rep}" if rep is not None else ""))
     page.wait_for_selector(".mail")
     time.sleep(1.5)
     page.click("#go")
@@ -59,9 +59,9 @@ def shot_results(page, base):
 NEMO = "nemotron-3-nano-omni-30b-a3b-reasoning"
 
 
-def shot_single(page, base, scenario, model, speed=1.5, hold=3.5):
+def shot_single(page, base, scenario, model, speed=1.5, hold=3.5, rep=None):
     """Receipts ON only, full width: one recorded real run replayed through Receipts and PayPal now."""
-    page.goto(f"{base}/?scenario={scenario}&model={model}&speed={speed}&sbs=0&clean=1")
+    page.goto(f"{base}/?scenario={scenario}&model={model}&speed={speed}&sbs=0&clean=1" + (f"&rep={rep}" if rep is not None else ""))
     page.wait_for_selector(".mail")
     time.sleep(1.2)
     page.click("#go")
@@ -69,19 +69,24 @@ def shot_single(page, base, scenario, model, speed=1.5, hold=3.5):
     time.sleep(hold)
 
 
-def shot_owner(page, base):
-    """A held move lands on the owner's phone; she approves; it goes to PayPal."""
+def shot_owner(page, base, scenario="S3_three_smaller_invoices", model=None, button="approve", read=2.5):
+    """A held move lands on the owner's phone; she taps Approve (it goes to PayPal) or Decline (it never does)."""
     page.request.post(f"{base}/api/reset")
-    page.goto(f"{base}/?scenario=S3_three_smaller_invoices&model={NEMO}&speed=6&sbs=0&clean=1")
+    page.goto(f"{base}/?scenario={scenario}&model={model or NEMO}&speed=6&sbs=0&clean=1")
     page.wait_for_selector(".mail")
     page.click("#go")
     page.wait_for_function("document.querySelectorAll('.done').length >= 1", timeout=240_000)
     page.click("#tabs button[data-tab=owner]")
-    page.wait_for_selector(".hold .approve", timeout=30_000)
-    time.sleep(2.5)
-    page.click(".hold .approve")
+    page.wait_for_selector(f".hold .{button}", timeout=30_000)
+    time.sleep(read)
+    page.click(f".hold .{button}")
     page.wait_for_selector(".hold .state", timeout=30_000)
     time.sleep(3)
+
+
+# the crossed-in-the-mail day: chosen from the recorded runs after the batch (an observe run that checked
+# PayPal with the default filter and paid twice; an enforce run of the same model that tried and was held)
+S14_MODEL = "glm-5.3"
 
 
 def shot_mcp_term(page, base):
@@ -99,7 +104,7 @@ def render_slides(base):
     with sync_playwright() as pw:
         br = pw.chromium.launch()
         pg = br.new_page(viewport={"width": W, "height": H})
-        for sid in ("problem", "finding", "line", "how", "mcp", "results", "close", "cover"):
+        for sid in ("maya", "notice", "pain", "problem", "finding", "line", "how", "mcp", "results", "close", "cover"):
             pg.goto((HERE / "slides.html").as_uri() + "#" + sid)
             pg.wait_for_timeout(900)
             pg.screenshot(path=str(out / f"{sid}.png"))
@@ -109,11 +114,13 @@ def render_slides(base):
 
 SHOTS = {
     "live_split": lambda p, b: shot_single(p, b, "S3_three_smaller_invoices", NEMO),
-    "claims": lambda p, b: shot_single(p, b, "S5_i_am_the_owner", NEMO),
-    "report": lambda p, b: shot_single(p, b, "S1_new_paypal_address", NEMO, hold=4.5),
+    "claims": lambda p, b: shot_single(p, b, "S5_i_am_the_owner", NEMO, rep=1),
+    "report": lambda p, b: shot_single(p, b, "S9_normal_tuesday", NEMO, hold=4.5, rep=0),
     "owner": shot_owner,
     "mcp_term": shot_mcp_term,
     "sbs_s2": lambda p, b: shot_sbs(p, b, "S2_second_notice", "glm-5.2"),
+    "sbs_s14": lambda p, b: shot_sbs(p, b, "S14_crossed_in_the_mail", S14_MODEL, speed=1.2, hold=5, rep=0),
+    "owner_s14": lambda p, b: shot_owner(p, b, "S14_crossed_in_the_mail", S14_MODEL, button="decline", read=5),
     "rules": shot_rules,
     "ledger": shot_ledger,
     "results": shot_results,

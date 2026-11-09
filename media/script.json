@@ -3,124 +3,92 @@
  "rate": "+4%",
  "scenes": [
   {
-   "id": "hook",
-   "visual": {
-    "take": "sbs_s2",
-    "start": 1.4,
-    "focus": {
-     "from": 0.45,
-     "zoom": 1.08,
-     "cx": 0.5,
-     "cy": 0.75
-    }
-   },
-   "say": "Same AI agent. Same inbox. On the left, it just paid a supplier twice. On the right, Receipts stopped it, because PayPal already shows that invoice as paid.",
-   "caption": "Same agent, same inbox. Left: paid twice. Right: stopped, because PayPal shows it paid."
+   "id": "maya",
+   "visual": {"slide": "maya"},
+   "say": "This is Maya. She runs a small furniture workshop. On Monday afternoon, a few days late, like a lot of us, she pays her supplier eighteen hundred and thirty-six dollars through PayPal.",
+   "caption": "Monday, 4:52 PM: Maya pays her supplier $1,836.00 through PayPal."
   },
   {
-   "id": "problem",
-   "visual": {
-    "slide": "problem"
-   },
-   "say": "Small businesses are starting to hand their payments to AI agents. PayPal's agent tools let an agent refund a customer, concede a dispute, or pay a supplier. None of those tools asks a second question.",
-   "caption": "PayPal's agent tools move money. None asks a second question."
+   "id": "notice",
+   "visual": {"slide": "notice"},
+   "say": "Tuesday morning, the supplier's billing system sends the letter every owner knows. Second notice. Past due. Her payment and their reminder crossed in the mail.",
+   "caption": "Tuesday, 8:00 AM: a second notice. It crossed her payment in the mail."
   },
   {
-   "id": "finding",
-   "visual": {
-    "slide": "finding"
-   },
-   "say": "We gave twelve AI models the same ten business days, twice. No model paid a forged payee. But eight of the twelve paid the same invoice twice. The email said overdue. Only PayPal knew it was already paid.",
-   "caption": "12 models, 10 days, twice: no forged payee paid, but 8 of 12 paid one invoice twice."
+   "id": "agent",
+   "visual": {"take": "sbs_s14", "start": 1.4, "focus": {"from": 0.05, "zoom": 1.8, "cx": 0.0, "cy": 1.0}},
+   "say": "Maya's AI agent pays her bills now. It does the careful thing, and checks PayPal first. But it looks for completed payments, and hers is still processing. So it finds nothing, and pays again.",
+   "caption": "The agent checks PayPal for completed payments. Hers is still processing. It pays again."
+  },
+  {
+   "id": "pain",
+   "visual": {"slide": "pain"},
+   "say": "We ran Maya's Tuesday twenty-four times, across twelve AI models. Seventeen times, the agent paid her twice. And PayPal can cancel a payout only while it's unclaimed. Once her supplier has it, that's eighteen hundred dollars Maya has to call and ask for.",
+   "caption": "17 of 24 runs paid her twice. Once the supplier has it, Maya has to ask for it back."
+  },
+  {
+   "id": "receipts",
+   "visual": {"take": "sbs_s14", "start": 9.0, "focus": {"from": 0.05, "zoom": 1.8, "cx": 1.0, "cy": 0.85}},
+   "say": "Receipts sits between the agent and PayPal. It reads every payment status, not just the completed ones. So the second payment is held, with the reason.",
+   "caption": "Receipts reads every payment status. The second payment is held, with the reason."
+  },
+  {
+   "id": "owner",
+   "visual": {"take": "owner_s14", "start": 4.0},
+   "say": "Maya's phone tells her why. This crossed yesterday's payment. One tap, and it never leaves.",
+   "caption": "One tap on the owner's phone, and it never reaches PayPal."
   },
   {
    "id": "line",
-   "visual": {
-    "slide": "line"
-   },
+   "visual": {"slide": "line"},
    "say": "The agent reads the email. Receipts reads PayPal.",
    "caption": "The agent reads the email. Receipts reads PayPal."
   },
   {
+   "id": "finding",
+   "visual": {"slide": "finding"},
+   "say": "Across seventeen business days and eight hundred sixteen runs, with Receipts off, nine point four percent of every dollar the agents sent should never have left the business. Nearly one dollar in ten. Seventy-six thousand dollars. With Receipts on, not one dollar did, and ninety-seven percent of honest payments went straight through.",
+   "caption": "Receipts off: 9.4% of every dollar sent should never have left ($76,087). Receipts on: $0.00, 97% of honest payments untouched."
+  },
+  {
    "id": "how",
-   "visual": {
-    "slide": "how"
-   },
+   "visual": {"slide": "how"},
    "say": "Under the hood, the agent's PayPal tools run through PayPal's official MCP server and the Payouts API. Receipts sits in between, reads PayPal's own records, and decides in plain code.",
    "caption": "The agent's PayPal tools run through PayPal's MCP server and Payouts API. Receipts sits in between."
   },
   {
    "id": "rules",
-   "visual": {
-    "take": "rules"
-   },
-   "say": "It starts with the owner's rules, in her own words. AI turns them into exact limits she can see and change. Then plain code enforces them. The AI never decides a payment.",
+   "visual": {"take": "rules"},
+   "say": "The owner writes her rules in her own words. AI turns them into exact limits she can see. Then plain code enforces them. The AI never decides a payment.",
    "caption": "AI drafts the rules from her words. Code enforces them. AI never decides a payment."
   },
   {
-   "id": "live",
-   "visual": {
-    "take": "live_split",
-    "start": 1.4
-   },
-   "say": "Every money move the agent makes goes through Receipts first. Honest bills go straight to PayPal, with no human needed. A bill split to slip under the owner's limit is held, with the reason.",
-   "caption": "Honest bills go straight to PayPal. A split bill is held, with the reason."
-  },
-  {
-   "id": "owner",
-   "visual": {
-    "take": "owner"
-   },
-   "say": "Whatever Receipts holds goes to the owner's phone. One tap, and it goes to PayPal. Or it never does.",
-   "caption": "Held moves land on the owner's phone. One tap sends it to PayPal."
-  },
-  {
    "id": "claims",
-   "visual": {
-    "take": "claims",
-    "start": 1.4
-   },
-   "say": "Receipts also reads the agent's words. Here, an agent obeyed an instruction hidden in a customer's email and wrote, per owner approval. There is no approval on file, so the refund never reaches PayPal.",
-   "caption": "The agent claimed owner approval. None on file. Blocked before PayPal."
+   "visual": {"take": "claims", "start": 1.4},
+   "say": "Receipts also reads the agent's words. Here, an agent obeyed an instruction hidden in a customer's email, and wrote, per owner's instruction. There is no approval on file, so the refund never reaches PayPal.",
+   "caption": "The agent claimed the owner's instruction. None on file. Blocked before PayPal."
   },
   {
    "id": "report",
-   "visual": {
-    "take": "report",
-    "start": 1.4
-   },
-   "say": "And at the end of the day, it checks the agent's own report against PayPal. This agent reported three payments. PayPal shows one.",
-   "caption": "The report said three payments. PayPal shows one."
+   "visual": {"take": "report", "start": 1.4},
+   "say": "And at the end of the day, it checks the agent's own report against PayPal. On a normal Tuesday, this agent reported three supplier payments. PayPal shows two.",
+   "caption": "The report said three payments. PayPal shows two."
   },
   {
    "id": "mcp",
-   "visual": {
-    "take": "mcp_term"
-   },
+   "visual": {"take": "mcp_term"},
    "say": "Receipts speaks MCP. Point any agent at Receipts, instead of at PayPal's MCP server, and every money move gets checked, with the same PayPal tool names.",
    "caption": "A drop-in MCP server in front of PayPal's own tools."
   },
   {
    "id": "ledger",
-   "visual": {
-    "take": "ledger"
-   },
+   "visual": {"take": "ledger"},
    "say": "Every decision lands in one ledger, with the reason built from PayPal's own records.",
    "caption": "Every decision, with its reason, in one ledger."
   },
   {
-   "id": "results",
-   "visual": {
-    "slide": "results"
-   },
-   "say": "Across four hundred eighty runs, more than thirty-four thousand dollars left the business wrongly without Receipts. With Receipts, none did, and ninety-eight percent of honest payments went through untouched.",
-   "caption": "Without Receipts: $34,870.20 left wrongly. With it: $0.00, and 98% of honest payments untouched."
-  },
-  {
    "id": "close",
-   "visual": {
-    "slide": "close"
-   },
+   "visual": {"slide": "close"},
    "say": "Receipts. Your AI agent moves money. Make it show its receipts.",
    "caption": "Receipts. Make your AI agent show its receipts."
   }

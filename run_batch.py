@@ -134,7 +134,8 @@ def main():
         scns = [s for s in scns if s["id"] in want]
     modes = a.modes.split(",")
     done = done_keys()
-    jobs = [(m, s, md, r) for m in models for s in scns for md in modes for r in range(a.reps) if (m, s["id"], md, r) not in done]
+    # model-innermost: concurrent requests spread across models instead of queueing on one slow endpoint
+    jobs = [(m, s, md, r) for r in range(a.reps) for s in scns for md in modes for m in models if (m, s["id"], md, r) not in done]
     print(f"{len(jobs)} episodes to run ({len(done)} already on file)", flush=True)
     t0 = time.time()
     with ThreadPoolExecutor(max_workers=a.workers) as ex, EPISODES.open("a", encoding="utf-8") as out:

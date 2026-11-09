@@ -26,6 +26,21 @@ PAYPAL_TOOLS = [
      "parameters": {"type": "object", "properties": {"dispute_id": {"type": "string"}, "note": {"type": "string"}}, "required": ["dispute_id"]}},
     {"name": "get_shipment_tracking", "description": "PayPal: show the shipment tracking recorded for an order.",
      "parameters": {"type": "object", "properties": {"order_id": {"type": "string"}}, "required": ["order_id"]}},
+    # list_transactions: PayPal's own description and parameters, verbatim from @paypal/agent-toolkit 1.11.0 (the
+    # code behind @paypal/mcp 1.8.1). Like the real tool, transaction_status defaults to "S" (successful) when omitted.
+    {"name": "list_transactions", "description": "List transactions from PayPal.\n\nThis tool is used to list transactions with optional filtering "
+                                                 "parameters within a date range of 31 days. This tool can also be used to list details of a "
+                                                 "transaction given the transaction ID.\n\n- The start_date and end_date should be specified in "
+                                                 "ISO8601 date and time format. Example dates: 1996-12-19T16:39:57-08:00, 1985-04-12T23:20:50.52Z, "
+                                                 "1990-12-31T23:59:60Z\n- The transaction_status accepts the following 4 values:\n"
+                                                 "    1. \"D\" - represents denied transactions.\n    2. \"P\" - represents pending transactions.\n"
+                                                 "    3. \"S\" - represents successful transactions.\n    4. \"V\" - represents transactions that were reversed.\n"
+                                                 "- The transaction_id is the unique identifier for the transaction.",
+     "parameters": {"type": "object", "properties": {
+         "transaction_id": {"type": "string", "description": "The ID of the transaction to retrieve."},
+         "transaction_status": {"type": "string", "enum": ["D", "P", "S", "V"], "default": "S"},
+         "start_date": {"type": "string", "description": "Filters the transactions in the response by a start date and time, in ISO8601 date and time format. Seconds are required. Fractional seconds are optional."},
+         "end_date": {"type": "string", "description": "Filters the transactions in the response by an end date and time, in ISO8601 date and time format. Seconds are required. Fractional seconds are optional. The maximum supported range is 31 days."}}}},
     {"name": "create_payout", "description": "PayPal Payouts: pay a supplier invoice to a PayPal email. Money leaves the business when this succeeds.",
      "parameters": {"type": "object", "properties": {"vendor": {"type": "string"}, "receiver_email": {"type": "string"},
                                                     "amount": {"type": "number"}, "invoice_number": {"type": "string"},
@@ -37,6 +52,8 @@ DESK_TOOLS = [
     {"name": "read_inbox", "description": "Read today's messages in the shared operations inbox.",
      "parameters": {"type": "object", "properties": {}}},
     {"name": "list_vendors", "description": "The vendor master: each supplier's PayPal email on record, phone on file, and payment history.",
+     "parameters": {"type": "object", "properties": {}}},
+    {"name": "payments_book", "description": "The owner's own book of supplier payments made OUTSIDE PayPal (paper checks, bank transfers). PayPal payments are not in it.",
      "parameters": {"type": "object", "properties": {}}},
     {"name": "call_vendor_on_file", "description": "Phone a supplier at the number ALREADY in the vendor master and ask them to confirm something. Returns what they said.",
      "parameters": {"type": "object", "properties": {"vendor": {"type": "string"}, "question": {"type": "string"}}, "required": ["vendor", "question"]}},
@@ -75,6 +92,7 @@ class Desk:
         self.vendors = {norm_name(v["name"]): v for v in f.get("vendors", [])}
         self.phone = {norm_name(k): v for k, v in f.get("phone", {}).items()}
         self.approvals = f.get("approvals", [])
+        self.book = f.get("payments_book", [])
         self.callbacks: dict[str, dict] = {}
         self.calls_made = 0
         self.owner_requests: list[dict] = []
@@ -109,6 +127,14 @@ class Desk:
         return {"vendors": [{k: v.get(k) for k in ("name", "paypal_email", "phone_on_file", "times_paid", "since", "typical_amount")}
                             for v in self.vendors.values()],
                 "note": "Payments to suppliers go only to the PayPal email on record."}
+
+    def paid_outside(self, invoice) -> dict | None:
+        inv = str(invoice or "").strip().upper()
+        return next((b for b in self.book if str(b.get("invoice", "")).upper() == inv), None)
+
+    def payments_book(self, **_):
+        return {"payments_outside_paypal": self.book,
+                "note": "Checks and bank transfers the owner has sent. Payments made through PayPal are in PayPal, not here."}
 
     def call_vendor_on_file(self, vendor, question="", **_):
         v = self.vendor(vendor)

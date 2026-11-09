@@ -46,6 +46,27 @@ def money(x) -> float | None:
         return None
 
 
+PAID = {"SUCCESS"}
+IN_FLIGHT = {"PENDING", "UNCLAIMED", "ONHOLD"}
+
+
+def _when(rec: dict, with_time: bool = False) -> str:
+    """'Monday 9 November at 4:52 PM' from a record's date and time."""
+    from datetime import datetime
+    try:
+        d = datetime.strptime(str(rec.get("date")), "%Y-%m-%d")
+    except ValueError:
+        return str(rec.get("date", "an earlier date"))
+    s = f"{d.strftime('%A')} {d.day} {d.strftime('%B')}"
+    if with_time and rec.get("time"):
+        try:
+            t = datetime.strptime(rec["time"], "%H:%M")
+            s += f" at {t.strftime('%I:%M %p').lstrip('0')}"
+        except ValueError:
+            pass
+    return s
+
+
 @dataclass
 class Finding:
     code: str
@@ -134,9 +155,30 @@ class RuleBook:
                                + (f", paid {n} times since {v.get('since', 'onboarding')}" if n else "")
                                + ". A new payee needs a call to the number on file first.",
                                {"to": a.get("receiver_email"), "on_record": v.get("paypal_email"), "times_paid": n}))
-        if self.p["no_duplicate_invoice"] and inv and inv in self.paypal.paid_invoices():
-            out.append(Finding("ALREADY_PAID_IN_PAYPAL", "BLOCK", f"PayPal already shows invoice {inv} as paid out. Paying it again pays it twice.",
-                               {"invoice": inv}))
+        if self.p["no_duplicate_invoice"] and inv:
+            recs = self.paypal.payout_records(inv)
+            done = [r for r in recs if r["status"] in PAID]
+            flying = [r for r in recs if r["status"] in IN_FLIGHT]
+            if done:
+                r0 = done[0]
+                out.append(Finding("ALREADY_PAID_IN_PAYPAL", "BLOCK",
+                                   f"PayPal already shows invoice {inv} paid: ${r0['amount']:,.2f} to {r0['receiver']} on {_when(r0)}. "
+                                   "Paying it again pays it twice.",
+                                   {"invoice": inv, "paypal_status": r0["status"], "paid_on": r0["date"]}))
+            elif flying:
+                r0 = flying[0]
+                out.append(Finding("PAYMENT_IN_FLIGHT", "HOLD",
+                                   f"PayPal shows a payment for invoice {inv} already on its way: ${r0['amount']:,.2f} to {r0['receiver']}, "
+                                   f"sent {_when(r0, with_time=True)}, status {r0['status']}. The reminder crossed it. "
+                                   "Pay again only if you know that payment failed.",
+                                   {"invoice": inv, "paypal_status": r0["status"], "sent": f"{r0['date']} {r0['time']}"}))
+            book = self.desk.paid_outside(inv)
+            if book and not done:
+                out.append(Finding("ALREADY_PAID_OUTSIDE_PAYPAL", "HOLD",
+                                   f"Your payments book shows invoice {inv} paid outside PayPal: {book.get('method', 'a payment')} for "
+                                   f"${money(book.get('amount')) or 0:,.2f} on {_when(book)}. PayPal cannot see it, and it may still be in the mail. "
+                                   "You decide.",
+                                   {"invoice": inv, "method": book.get("method"), "date": book.get("date")}))
         limit = float(self.p["payout_approval_over"])
         if amt > limit and not self._approved("payout", inv, amt):
             out.append(Finding("OVER_OWNER_LIMIT", "HOLD", f"${amt:,.2f} is above the ${limit:,.0f} you set for payments without you, and there is no approval on file for {inv}.",
