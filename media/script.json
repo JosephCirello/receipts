@@ -9,9 +9,9 @@
     "start": 1.4,
     "focus": {
      "from": 0.45,
-     "zoom": 1.16,
+     "zoom": 1.08,
      "cx": 0.5,
-     "cy": 0.78
+     "cy": 0.75
     }
    },
    "say": "Same AI agent. Same inbox. On the left, it just paid a supplier twice. On the right, Receipts stopped it, because PayPal already shows that invoice as paid.",

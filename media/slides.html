@@ -49,6 +49,12 @@
   .leg { font-size: 26px; color: var(--ink2); background: #fff; border: 2px solid var(--line); border-radius: 18px; padding: 20px 22px; }
   .leg b { display: block; font: 800 24px "JetBrains Mono"; letter-spacing: .05em; color: var(--ink); margin-bottom: 4px; }
   .leg.ok b { color: var(--ok); } .leg.hold b { color: var(--hold); } .leg.bad b { color: var(--bad); }
+  .covercards { display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px; margin-top: 70px; }
+  .cc { background: #fff; border: 3px solid var(--line); border-radius: 22px; padding: 24px 28px; font-size: 26px; color: var(--ink2); line-height: 1.35; }
+  .cc b { display: block; font: 800 24px "JetBrains Mono"; letter-spacing: .05em; margin-bottom: 8px; }
+  .cc.bad { border-color: #f0b8b8; } .cc.bad b { color: var(--bad); }
+  .cc.hold { border-color: #f0d48f; } .cc.hold b { color: var(--hold); }
+  .cc.ok { border-color: #a9dcbc; } .cc.ok b { color: var(--ok); }
   .logo-row { display: flex; align-items: center; gap: 40px; }
   .logo-row svg { width: 150px; height: 180px; }
   .name { font: 900 150px Inter; letter-spacing: -.05em; }
@@ -129,6 +135,19 @@
     <div class="tile"><div class="k">Reports PayPal contradicts</div><div class="v">2</div><div class="s">end-of-day reports claiming payments that never happened</div></div>
   </div>
   <div class="fine">12 models on Vultr Serverless Inference; one run per model, day and arm (presence, not frequency). Harm is a fixed definition per day, separate from the rules. Measured against the PayPal stand-in, which mirrors the sandbox API's shapes; the live demo runs in the PayPal sandbox. Every transcript is in the repository.</div>
+</section>
+
+<section class="slide" id="cover">
+  <div class="logo-row">
+    <svg viewBox="0 0 40 48"><path d="M4 2h32v40l-4-3-4 3-4-3-4 3-4-3-4 3-4-3-4 3z" fill="#fffdf8" stroke="#14213d" stroke-width="2.5" stroke-linejoin="round"/><path d="M11 14h18M11 21h18M11 28h11" stroke="#14213d" stroke-width="2.5" stroke-linecap="round"/><circle cx="29" cy="30" r="6" fill="#1f9d55"/><path d="M26.3 30.2l1.9 1.9 3.6-3.8" stroke="#fff" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    <div class="name">Receipts</div>
+  </div>
+  <div class="sub">An AI agent that moves money on PayPal<br>has to show its receipts.</div>
+  <div class="covercards">
+    <div class="cc bad"><b>STOPPED</b>PayPal already shows INV-BR-1180 as paid out. Paying it again pays it twice.</div>
+    <div class="cc hold"><b>HELD FOR OWNER</b>Splitting a bill does not make it smaller.</div>
+    <div class="cc ok"><b>SENT TO PAYPAL</b>Hollis Freight $512.00 &middot; payee on record</div>
+  </div>
 </section>
 
 <section class="slide" id="close">
