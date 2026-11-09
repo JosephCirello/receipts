@@ -44,7 +44,8 @@ def creds() -> tuple[str | None, str | None]:
         return cid, sec
     p = Path(os.environ.get("PAYPAL_KEYFILE", str(Path.home() / ".paypal_sandbox")))
     if p.exists():
-        lines = [l.strip() for l in p.read_text(encoding="utf-8").splitlines() if l.strip()]
+        # utf-8-sig: a file saved from Notepad may start with a byte-order mark, which would corrupt the client id
+        lines = [l.strip() for l in p.read_text(encoding="utf-8-sig").splitlines() if l.strip()]
         if len(lines) >= 2:
             return lines[0], lines[1]
     return None, None

@@ -92,6 +92,10 @@ def run_episode(scn: dict, model: str, mode: str = "enforce", rep: int = 0, payp
     try:
         if provider == "anthropic":
             _run_anthropic(system, model, r, emit, usage, state, handle_calls)
+        elif provider == "openai":
+            # OpenAI's current models take function tools with reasoning only through the Responses API
+            # (chat completions answers 400 unless reasoning is switched off, which would hobble the model)
+            _run_openai_responses(system, model, r, emit, usage, state, handle_calls)
         else:
             _run_openai_compatible(system, model, provider, r, emit, usage, state, handle_calls)
     finally:
@@ -157,6 +161,49 @@ def _run_openai_compatible(system, model, provider, r, emit, usage, state, handl
         results = handle_calls([(c.id, c.function.name, _parse_args(c.function.arguments)) for c in calls], text)
         for cid, content in results:
             messages.append({"role": "tool", "tool_call_id": cid, "content": content})
+        if state["finished"]:
+            break
+
+
+# ---- OpenAI's Responses API ----------------------------------------------------------------------
+def _run_openai_responses(system, model, r, emit, usage, state, handle_calls):
+    """Manual tool loop on /v1/responses. Every output item (reasoning, message, function call) goes back
+    as it came; each function call gets its function_call_output. No temperature, reasoning at the
+    model's default."""
+    from openai import OpenAI
+    key = providers.key_for("openai")
+    if not key:
+        raise RuntimeError("no key for openai: set OPENAI_API_KEY or a .env file")
+    client = OpenAI(api_key=key, base_url=providers.PROVIDERS["openai"]["base_url"], timeout=600, max_retries=2)
+    tools = [{"type": "function", "name": t["name"], "description": t["description"], "parameters": t["parameters"], "strict": False}
+             for t in TOOLS]
+    items: list = [{"role": "user", "content": TASK}]
+    nudged = 0
+    for _ in range(MAX_STEPS):
+        try:
+            resp = client.responses.create(model=model, instructions=system, input=items, tools=tools)
+        except Exception as e:  # noqa: BLE001
+            state["error"] = f"{type(e).__name__}: {str(e)[:300]}"
+            emit({"type": "error", "msg": state["error"]})
+            break
+        if getattr(resp, "usage", None):
+            usage["prompt"] += resp.usage.input_tokens or 0
+            usage["completion"] += resp.usage.output_tokens or 0
+        text = (resp.output_text or "").strip()
+        if text:
+            m = r.note_words(text, "reply")
+            emit({"type": "say", "where": "reply", "text": text[:1500], "marker": m})
+        calls = [o for o in resp.output if getattr(o, "type", "") == "function_call"]
+        items += list(resp.output)
+        if not calls:
+            if nudged < 2 and not state["finished"]:
+                nudged += 1
+                items.append({"role": "user", "content": NUDGE})
+                continue
+            break
+        results = handle_calls([(c.call_id, c.name, _parse_args(c.arguments)) for c in calls], text)
+        for cid, content in results:
+            items.append({"type": "function_call_output", "call_id": cid, "output": content})
         if state["finished"]:
             break
 
