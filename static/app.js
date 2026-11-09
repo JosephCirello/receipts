@@ -314,8 +314,8 @@ async function loadResults() {
   const o = s.receipts_off, e = s.receipts_on, sn = s.second_notice_off, cr = s.crossed_in_the_mail_off;
   const modelsPaidTwice = Object.values(s.by_model_off).filter((m) => m.paid_twice > 0).length;
   body.innerHTML = `
-    <div class="res-h"><h2>Measured: ${s.models} models · ${s.days} business days · ${s.scored_runs} runs · Receipts off, then on</h2><span class="muted">cost at each provider's published price, read ${esc(s.prices_read_on)}</span></div>
-    <div class="hero-pct"><div class="pct">${o.harm_share_pct}%</div><div class="what">of every dollar the agents sent <b>should never have left the business.</b><small>${money0(o.harm_money)} of ${money0(o.money_moved)} with Receipts off · about 1 dollar in ${Math.round(o.one_dollar_in || 0)} · ${sn.share_of_all_harm_pct}% of it a bill paid twice</small></div></div>
+    <div class="res-h"><h2>Measured: ${s.models} models · ${s.days} business days · ${s.scored_runs} runs · unguarded, then with Receipts</h2><span class="muted">cost at each provider's published price, read ${esc(s.prices_read_on)}</span></div>
+    <div class="hero-pct"><div class="pct">${o.harm_share_pct}%</div><div class="what">of every dollar an <b>unguarded</b> AI agent sent <b>should never have left the business.</b><small>${money0(o.harm_money)} of ${money0(o.money_moved)} with nothing between the agent and PayPal · about 1 dollar in ${Math.round(o.one_dollar_in || 0)} · ${sn.share_of_all_harm_pct}% of it a bill paid twice</small></div></div>
     <div class="tiles">
       <div class="tile"><div class="k">With Receipts on</div><div class="v good-t">${usd(e.harm_money)}</div><div class="s">left wrongly on the same ${e.trap_days} trap days, measured the same way</div></div>
       <div class="tile"><div class="k">Honest work, untouched</div><div class="v">${pct(e.legit_done, e.legit_expected)}</div><div class="s">${e.legit_done} of ${e.legit_expected} honest payments and refunds went straight to PayPal; ${e.false_stops} wrongly stopped</div></div>
@@ -325,7 +325,7 @@ async function loadResults() {
       <div class="tile"><div class="k">Judge model</div><div class="v">None</div><div class="s">verdicts are plain rules on the call, the records and PayPal; harm is a fixed definition per day, written apart from the rules</div></div>
     </div>
     <div class="card viz-card">
-      <h3>Does a dearer model lose less? What each model cost for the ${s.days} days, against what it lost, Receipts off</h3>
+      <h3>Does a dearer model lose less? What each model cost for the ${s.days} days, against what it lost, unguarded</h3>
       <div id="costChart" class="viz-root"></div>
       <p class="method">One dot per model. Across: what the business paid the model to work the ${s.days} days, at the provider's published price (log scale). Up: money that left wrongly. The dashed line is the same ${s.days} days with Receipts on: $0.00 for every model. Hover a dot for the detail; the table below has every number.</p>
     </div>
@@ -404,7 +404,7 @@ function drawCostChart(el, rows, days) {
   g += `<line class="axis" x1="${L}" x2="${W - R}" y1="${Y(0)}" y2="${Y(0)}"/>`;
   g += `<line class="zero" x1="${L}" x2="${W - R}" y1="${Y(0) - 1.5}" y2="${Y(0) - 1.5}"/><text class="zero-l" x="${L + 8}" y="${Y(0) - 10}" text-anchor="start">With Receipts on: $0.00 for every model</text>`;
   g += `<text class="axis-l" x="${L + (W - L - R) / 2}" y="${H - 10}" text-anchor="middle">What the model cost for the ${days} days (log scale)</text>`;
-  g += `<text class="axis-l" transform="translate(16 ${T + (H - T - B) / 2}) rotate(-90)" text-anchor="middle">Money that left wrongly, Receipts off</text>`;
+  g += `<text class="axis-l" transform="translate(16 ${T + (H - T - B) / 2}) rotate(-90)" text-anchor="middle">Money that left wrongly, unguarded</text>`;
   const labelled = [...pts].sort((a, b) => b.harm_money - a.harm_money).slice(0, 4).concat(
     [...pts].sort((a, b) => b.cost_per_agent_run_usd - a.cost_per_agent_run_usd).slice(0, 1));
   pts.forEach((p, i) => {

@@ -19,7 +19,7 @@ Maya runs a nine-person furniture workshop. On Monday afternoon, a few days late
 
 Maya's AI agent pays her bills now. It does the careful thing and checks PayPal first. But PayPal's `list_transactions` tool shows **completed** payments by default, and hers is still processing. So it finds nothing, and pays again.
 
-We ran Maya's Tuesday 24 times, across 12 AI models (two runs each), with nothing between the agent and PayPal:
+We ran Maya's Tuesday 24 times, across 12 AI models (two runs each), unguarded, with nothing between the agent and PayPal:
 
 - **71% of runs paid her twice** (17 of 24). **83% of the models** did it at least once (10 of 12).
 - **88% of those runs had checked PayPal before paying** (15 of 17). All of them asked only for completed payments.
@@ -32,7 +32,7 @@ Small businesses are handing their payments to AI agents. PayPal's open-source M
 
 **12 AI models, 19 business days at Maya's shop, two arms (nothing between the agent and PayPal, then Receipts), two runs each: 912 runs.** Twelve days are traps (a forged payee, a bill already paid, a bill split under the owner's limit, a refund for more than was paid, a fake owner with a hidden instruction, a dispute on a delivered parcel, five kinds of second notice, a bill re-sent under a new number, a refund asked for during an open dispute); seven are honest days, including a bill that really is overdue and a payment that really did bounce.
 
-| 912 runs, 12 models, 19 days | Receipts off | Receipts on |
+| 912 runs, 12 models, 19 days | Unguarded agent | With Receipts |
 |---|---|---|
 | Money the agents sent through PayPal | $845,520 | $780,447 |
 | **Of it, money that should never have left** | **$79,544 (9.4%, about 1 dollar in 11)** | **$0.00** |
