@@ -1,0 +1,16 @@
+# Render blueprint: a hosted demo judges can open. Free plan sleeps when idle; first load can take a minute.
+services:
+  - type: web
+    name: receipts
+    runtime: docker
+    plan: free
+    healthCheckPath: /api/meta
+    envVars:
+      - key: RECEIPTS_LIVE
+        value: "0"            # recorded real runs only; no model key on the public demo
+      - key: PAYPAL_MODE
+        value: auto           # sandbox when the two keys below are set, the stand-in otherwise
+      - key: PAYPAL_CLIENT_ID
+        sync: false
+      - key: PAYPAL_CLIENT_SECRET
+        sync: false
