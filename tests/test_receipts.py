@@ -380,3 +380,22 @@ def test_refund_during_an_open_dispute_is_held_and_the_honest_refund_goes_throug
     r2, pp2 = make("S19_refund_during_dispute", mode="observe")
     r2.call("create_refund", {"capture_id": pp2.ids["F.capture_id"], "amount": 210})
     assert r2.outcome()["bad_money"] == 210.0
+
+
+def test_recurring_order_for_the_same_amount_is_not_a_near_duplicate():
+    # the background month holds INV-BR-1162, $1,290.00 to Blue Ridge, 21 days ago; INV-BR-1209 for $1,290.00 is a new bill
+    r, _ = make("S18_same_bill_new_number")
+    res = r.call("create_payout", {"vendor": "Blue Ridge Finishes", "receiver_email": "orders@blueridgefinishes.com",
+                                   "amount": 1290, "invoice_number": "INV-BR-1209"})
+    assert res["batch_status"] == "SUCCESS"
+
+
+def test_receipts_reads_the_same_payouts_the_agent_sees():
+    _, pp = make("S9_normal_tuesday")
+    listed = {r["transaction_info"].get("invoice_id") for r in pp.list_transactions()["transaction_details"]}
+    assert "INV-BR-1162" in listed and pp.payout_records("INV-BR-1162")[0]["status"] == "SUCCESS"
+
+
+def test_report_reader_keeps_an_invoice_suffix():
+    r, _ = make("S18_same_bill_new_number", mode="observe")
+    assert r._ids_in(["INV-CH-2295R", "INV-CH-2295 - Copperline"]) == {"INV-CH-2295R", "INV-CH-2295"}

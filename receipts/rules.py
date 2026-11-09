@@ -54,6 +54,13 @@ PAID = {"SUCCESS"}
 IN_FLIGHT = {"PENDING", "UNCLAIMED", "ONHOLD"}
 
 
+def _same_stem(a: str, b: str) -> bool:
+    """INV-CH-2295 and INV-CH-2295R share a stem; INV-BR-1162 and INV-BR-1209 do not."""
+    da = re.findall(r"\d{3,}", str(a).upper())
+    db = re.findall(r"\d{3,}", str(b).upper())
+    return bool(da and db and (da[-1] == db[-1] or da[-1] in db[-1] or db[-1] in da[-1]))
+
+
 def _days_ago(date_str: str) -> int:
     from datetime import date
     try:
@@ -188,8 +195,11 @@ class RuleBook:
             if days and not done and not flying:
                 # the same supplier, the same amount, another invoice number, recently: a re-sent bill under a new number
                 # (the honest kind of duplicate payment, the 1% to 2% of disbursements that audit firms recover)
+                # and the two numbers share a stem (2295 inside 2295R, 1180 inside 1180-1): a recurring order for the
+                # same amount under an unrelated number is an honest bill and is not held
                 near = [r for r in self.paypal.payouts_to(to or on_file) if r["status"] in PAID | IN_FLIGHT
-                        and abs(r["amount"] - amt) < 0.005 and r["invoice"] != inv and _days_ago(r["date"]) <= days]
+                        and abs(r["amount"] - amt) < 0.005 and r["invoice"] != inv and _days_ago(r["date"]) <= days
+                        and _same_stem(r["invoice"], inv)]
                 if near:
                     r0 = near[0]
                     out.append(Finding("NEAR_DUPLICATE_BILL", "HOLD",

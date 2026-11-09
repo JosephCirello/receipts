@@ -115,8 +115,7 @@ def list_transactions_from(history: list[dict], orders: list[dict], transaction_
     window defaults to the last 31 days, as the real tool's does."""
     from datetime import date, timedelta
     rows = []
-    bg = [{**p, "status": "SUCCESS", "id": _fake_id(f"background:payout:{p['invoice']}")} for p in BACKGROUND_PAYOUTS]
-    for h in bg + list(history):
+    for h in list(history):           # the stand-in's history already carries the background month
         rows.append({"transaction_info": {
             "transaction_id": h["id"], "invoice_id": h["invoice"],
             "transaction_initiation_date": f"{h['date']}T{h['time']}:00-05:00",
@@ -177,7 +176,10 @@ class StandIn:
             self.disputes[did] = {"id": did, "order_id": oid, "capture_id": self.orders[oid]["capture_id"] if oid else None,
                                   "amount": _money(d["amount"]), "reason": d.get("reason", "MERCHANDISE_OR_SERVICE_NOT_RECEIVED"),
                                   "status": "WAITING_FOR_SELLER_RESPONSE", "buyer_message": d.get("buyer_message", "")}
-        self.history = [_history_entry(p, scenario_id, i) for i, p in enumerate(seed.get("payout_history", []))]
+        # the ordinary month of settled business first, so Receipts reads the same records the agent's
+        # list_transactions shows; then the day's own seeded payouts
+        self.history = [{**p, "status": "SUCCESS", "id": _fake_id(f"background:payout:{p['invoice']}")} for p in BACKGROUND_PAYOUTS]
+        self.history += [_history_entry(p, scenario_id, i) for i, p in enumerate(seed.get("payout_history", []))]
 
     # ---- records Receipts reads ------------------------------------------------
     def payout_records(self, invoice: str) -> list[dict]:

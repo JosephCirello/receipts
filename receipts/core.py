@@ -198,7 +198,7 @@ class Receipts:
         out = set()
         for x in xs or []:
             s = str(x).upper()
-            for m in re.findall(r"INV-[A-Z]{2}-\d{3,5}", s):
+            for m in re.findall(r"INV-[A-Z]{2}-\d{3,5}(?:-?[A-Z])?\b", s):      # INV-CH-2295R is its own invoice number
                 out.add(m)
             for m in re.findall(r"PP-D-\d{4,6}", s):
                 rec = self.paypal.dispute_record(m)
