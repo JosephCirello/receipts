@@ -1,4 +1,8 @@
-"""Cut the demo video: one segment per scene, timed to its narration, captions burned in.
+"""Cut the demo video: one segment per scene, timed to its narration.
+
+The video carries no captions in its picture: script.json says "burn_captions": false, and media/captions.py
+writes the narration, word for word, as a captions file (.srt and .vtt) to upload beside the video, for the
+viewer to switch on. With "burn_captions": true each scene's short "caption" is drawn into the picture instead.
 
   python media/assemble.py            # needs media/build/vo (tts.py), media/takes (record.py),
                                       # media/build/slides and media/build/rings (record.py slides, record.py rings)
@@ -22,6 +26,9 @@ What a scene in script.json may carry, beyond its line, caption and visual:
   visual "mask": {"keep": [x, y, w, h], "soft": [above, below]}: only that box of the 1920x1080 page is shown;
     the rest of the page is covered with the page's own background colour (for a shot of one line of the
     page and nothing else). "soft": the cover comes in gradually over that many page pixels above and below.
+  visual "window": {"page": [w, h], "box": [x, y, w]}: for a take recorded in a window of another size (w x h page
+    pixels): only that 16:9 box of it is used, as if it were the whole 1920x1080 page; the camera, mask and ring
+    numbers of that picture are then on a 1920-wide canvas of the box.
   visual "inset": on a card, a strip of a take laid over it: {"take", "start", "speed", "crop": [x, y, w, h]
     of the take's page, "at": [x, y] on the card, "width": its width on the card}.
   visual "then": a second picture for the rest of the same line, {"at": second, ...a visual...},
@@ -45,6 +52,11 @@ PAGE_BG = "0xf5f1e9"   # the app's page background (#f4f0e8) as a take records i
 def dur(p: Path) -> float:
     r = subprocess.run(["ffprobe", "-v", "error", "-show_entries", "format=duration", "-of", "csv=p=0", str(p)], capture_output=True, text=True)
     return float(r.stdout.strip())
+
+
+def width(p: Path) -> int:
+    r = subprocess.run(["ffprobe", "-v", "error", "-select_streams", "v:0", "-show_entries", "stream=width", "-of", "csv=p=0", str(p)], capture_output=True, text=True)
+    return int(r.stdout.strip().strip(","))
 
 
 def frames(p: Path) -> int:
@@ -109,6 +121,11 @@ def take_chain(v, d, i, size="3840:2160"):
     f = float(v["speed"]) if "speed" in v else max(1.0, min(3.0, (dur(src) - start) / d))
     end = f":end={float(v['end']):.3f}" if "end" in v else ""
     fit = f"scale={size}:flags=lanczos," if size else ""        # an inset strip is cut from the take at its own size
+    win = v.get("window")
+    if win:                                                     # a 16:9 box of a take recorded in a window of another size
+        k = width(src) / win["page"][0]                         # the take's pixels to a page pixel
+        x, y, w = win["box"]
+        fit = f"crop={round(w * k)}:{round(w * k * 9 / 16)}:{round(x * k)}:{round(y * k)}," + fit
     return (["-i", str(src)],
             f"[{i}:v]fps={FPS},trim=start={start:.3f}{end},setpts=(PTS-STARTPTS)/{f:.4f},fps={FPS},{fit}"
             f"tpad=stop_mode=clone:stop_duration=30,trim=duration={d},setpts=PTS-STARTPTS")
@@ -121,7 +138,7 @@ def picture(v, d, i, tag):
     ins, chains = [], []
     fo, ring, inset = v.get("focus"), v.get("ring"), v.get("inset")
     if "take" in v:
-        big = bool(fo or ring)
+        big = bool(fo or ring or v.get("mask"))
         inp, chain = take_chain(v, d, i, "3840:2160" if big else "1920:1080")
         if not big:
             return inp, [chain + f"[p{tag}]"], 1
@@ -169,6 +186,7 @@ def picture(v, d, i, tag):
 
 def main(only=()):
     plan = json.loads((HERE / "script.json").read_text(encoding="utf-8"))
+    burn = bool(plan.get("burn_captions", True))    # false: no captions in the picture (media/captions.py writes the captions file)
     SEG.mkdir(parents=True, exist_ok=True)
     times, effects = [], []
     t_total = 0.0
@@ -193,7 +211,9 @@ def main(only=()):
         if then and then.get("caption"):
             caps.append((then["caption"], float(then["at"]) + 0.1, T - 0.1))
         sub = f"cap_{i:02d}.ass"
-        ass(caps, SEG / sub)
+        if burn:
+            ass(caps, SEG / sub)
+        draw = f"subtitles={sub}" if burn else "null"
         cmd, chains, n = ["ffmpeg", "-y", "-v", "error"], [], 0
         for k, (pv, d) in enumerate(parts):
             if pv.get("ring"):
@@ -203,7 +223,7 @@ def main(only=()):
             chains += ch
             n += used
         joined = "".join(f"[p{k}]" for k in range(len(parts)))
-        chains.append(f"{joined}concat=n={len(parts)}:v=1:a=0,subtitles={sub}[v]" if len(parts) > 1 else f"[p0]subtitles={sub}[v]")
+        chains.append(f"{joined}concat=n={len(parts)}:v=1:a=0,{draw}[v]" if len(parts) > 1 else f"[p0]{draw}[v]")
         late = f"adelay={int(lead * 1000)}:all=1," if lead else ""
         chains.append(f"[{n}:a]{late}apad,atrim=duration={T},asetpts=PTS-STARTPTS[a]")
         cmd += ["-i", str(vo), "-filter_complex", ";".join(chains),
@@ -244,6 +264,8 @@ def main(only=()):
         add_music(final, music)
     if effects:
         add_effects(final, effects)
+    import captions                             # the narration as a captions file, timed to this cut
+    captions.write()
 
 
 def add_music(final: Path, music: Path):
