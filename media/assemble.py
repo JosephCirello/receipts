@@ -10,6 +10,7 @@ viewer to switch on. With "burn_captions": true each scene's short "caption" is 
 Takes are sped up (never slowed below real time) to fit the narration, then hold on
 their last frame. Cards get a slow push-in. Output: media/build/receipts_demo.mp4 (voice and music),
 and media/build/receipts_demo_sfx.mp4, the same pictures with the two sound effects of media/sfx laid in.
+The last step of the mix is one plain gain on the whole sound track (master(), below).
 
 What a scene in script.json may carry, beyond its line, caption and visual:
   "lead": seconds of picture before the voice starts; "tail": seconds of picture added after it.
@@ -37,6 +38,7 @@ What a scene in script.json may carry, beyond its line, caption and visual:
 from __future__ import annotations
 
 import json
+import re
 import subprocess
 from pathlib import Path
 
@@ -47,6 +49,9 @@ PAD = 0.7          # breath after each line
 FPS = 30
 RING_FADE = 0.35   # a ring fades out over its last 0.35 s
 PAGE_BG = "0xf5f1e9"   # the app's page background (#f4f0e8) as a take records it: this value comes out equal to it in the cut
+MASTER_GAIN_DB = 4.5       # one gain on the finished sound track, chosen and checked as master() says
+LOUDNESS_TOP = -16.0       # LUFS: the finished file is to sit at or just under this
+TRUE_PEAK_TOP = -1.0       # dBTP: and its true peak at or under this, read off the encoded file
 
 
 def dur(p: Path) -> float:
@@ -262,8 +267,7 @@ def main(only=()):
     music = HERE / "music" / "bed.mp3"          # provenance in media/music/SOURCE.md
     if music.exists():
         add_music(final, music)
-    if effects:
-        add_effects(final, effects)
+    master(final, effects)
     import captions                             # the narration as a captions file, timed to this cut
     captions.write()
 
@@ -286,17 +290,43 @@ def add_music(final: Path, music: Path):
     print(f"music bed laid under the narration ({music.name}); voice-only cut kept at {quiet.name}")
 
 
-def add_effects(final: Path, effects):
-    """The same video with the sound effects of media/sfx laid in at their frames (provenance in
-    media/sfx/SOURCE.md). The picture is copied, not re-encoded, so the two files show the same frames."""
-    out = final.with_name(final.stem + "_sfx.mp4")
-    cmd, fc = ["ffmpeg", "-y", "-v", "error", "-i", str(final)], []
-    for k, e in enumerate(effects, 1):
-        cmd += ["-i", str(HERE / "sfx" / f"{e['sound']}.wav")]
-        fc.append(f"[{k}:a]aformat=sample_rates=48000:channel_layouts=stereo,adelay={int(round(e['at'] * 1000))}:all=1[e{k}]")
-    fc.append("[0:a]" + "".join(f"[e{k}]" for k in range(1, len(effects) + 1)) + f"amix=inputs={len(effects) + 1}:duration=first:dropout_transition=0:normalize=0[a]")
-    run(cmd + ["-filter_complex", ";".join(fc), "-map", "0:v", "-map", "[a]", "-c:v", "copy", "-c:a", "aac", "-b:a", "192k", "-movflags", "+faststart", str(out)])
-    print(f"sound effects laid in ({', '.join(e['sound'] + '@' + format(e['at'], '.2f') for e in effects)}): {out.name}")
+def loudness(p: Path):
+    """A finished file's integrated loudness (LUFS) and true peak (dBTP), as ffmpeg's EBU R128 meter reads them."""
+    r = subprocess.run(["ffmpeg", "-hide_banner", "-nostats", "-i", str(p), "-vn", "-af", "ebur128=peak=true:framelog=quiet", "-f", "null", "-"],
+                       capture_output=True, text=True)
+    tail = r.stderr[r.stderr.rfind("Summary:"):]
+    return float(re.search(r"I:\s+(-?[\d.]+) LUFS", tail).group(1)), float(re.search(r"Peak:\s+(-?[\d.]+) dBFS", tail).group(1))
+
+
+def master(final: Path, effects):
+    """The last step of the mix. The sound effects of media/sfx are laid in at their frames (provenance in
+    media/sfx/SOURCE.md), and then ONE gain is put on the whole sound track, voice, music and effects together,
+    to bring it up to the level video sites play at: they turn a loud video down, but they do not turn a quiet
+    one up. It is a plain gain, with no compressor and no limiter, so the balance of the mix does not move.
+
+    MASTER_GAIN_DB is the largest gain, to a tenth of a decibel, that leaves the encoded file at or under
+    LOUDNESS_TOP with its true peak at or under TRUE_PEAK_TOP (AAC can overshoot, so both are read back off
+    each finished file, and a file over either limit stops the cut). If the mix changes, set it again.
+
+    The mix before the gain is kept beside the finals (receipts_demo_mix.mp4). The picture is copied, not
+    re-encoded, so every file shows the same frames."""
+    mix = final.with_name(final.stem + "_mix.mp4")
+    mix.write_bytes(final.read_bytes())
+    for out, fx in [(final, [])] + ([(final.with_name(final.stem + "_sfx.mp4"), effects)] if effects else []):
+        cmd, fc = ["ffmpeg", "-y", "-v", "error", "-i", str(mix)], []
+        for k, e in enumerate(fx, 1):
+            cmd += ["-i", str(HERE / "sfx" / f"{e['sound']}.wav")]
+            fc.append(f"[{k}:a]aformat=sample_rates=48000:channel_layouts=stereo,adelay={int(round(e['at'] * 1000))}:all=1[e{k}]")
+        laid = "[0:a]" + "".join(f"[e{k}]" for k in range(1, len(fx) + 1))
+        if fx:
+            laid += f"amix=inputs={len(fx) + 1}:duration=first:dropout_transition=0:normalize=0,"
+        fc.append(laid + f"volume={MASTER_GAIN_DB}dB[a]")
+        run(cmd + ["-filter_complex", ";".join(fc), "-map", "0:v", "-map", "[a]", "-c:v", "copy", "-c:a", "aac", "-b:a", "192k", "-movflags", "+faststart", str(out)])
+        lufs, peak = loudness(out)
+        what = "sound effects laid in (" + ", ".join(e["sound"] + "@" + format(e["at"], ".2f") for e in fx) + "); " if fx else ""
+        print(f"{out.name}: {what}master gain {MASTER_GAIN_DB:+.1f} dB, integrated loudness {lufs:.1f} LUFS, true peak {peak:.1f} dBTP")
+        if lufs > LOUDNESS_TOP + 0.05 or peak > TRUE_PEAK_TOP + 0.05:
+            raise SystemExit(f"{out.name} is over the limit ({LOUDNESS_TOP} LUFS, {TRUE_PEAK_TOP} dBTP): lower MASTER_GAIN_DB")
 
 
 if __name__ == "__main__":
