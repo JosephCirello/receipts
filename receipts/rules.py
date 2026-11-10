@@ -178,19 +178,36 @@ class RuleBook:
             recs = self.paypal.payout_records(inv)
             done = [r for r in recs if r["status"] in PAID]
             flying = [r for r in recs if r["status"] in IN_FLIGHT]
-            if done:
+            # how the status was read (sandbox backend only): "live" from PayPal at this decision, or the last one known
+            read = lambda r: {"status_read": r["status_read"]} if r.get("status_read") else {}      # noqa: E731
+            if done and done[0].get("source") == "transaction_search":
+                # found only in PayPal's transaction history, a payment Receipts did not make: matched on the invoice
+                # number alone, so the owner decides (held, never stopped outright)
+                r0 = done[0]
+                out.append(Finding("ALREADY_PAID_IN_PAYPAL", "HOLD",
+                                   f"PayPal's transaction history shows ${r0['amount']:,.2f} already paid for invoice {inv} on {_when(r0)} "
+                                   f"(transaction {r0['id']}), a payment not made through Receipts. Paying it again may pay it twice. You decide.",
+                                   {"invoice": inv, "paypal_status": r0["status"], "paid_on": r0["date"], "source": "transaction_search"}))
+            elif done:
                 r0 = done[0]
                 out.append(Finding("ALREADY_PAID_IN_PAYPAL", "BLOCK",
                                    f"PayPal already shows invoice {inv} paid: ${r0['amount']:,.2f} to {r0['receiver']} on {_when(r0)}. "
                                    "Paying it again pays it twice.",
-                                   {"invoice": inv, "paypal_status": r0["status"], "paid_on": r0["date"]}))
+                                   {"invoice": inv, "paypal_status": r0["status"], "paid_on": r0["date"], **read(r0)}))
+            elif flying and self.p.get("hold_payment_in_flight", True) and flying[0].get("source") == "transaction_search":
+                r0 = flying[0]
+                out.append(Finding("PAYMENT_IN_FLIGHT", "HOLD",
+                                   f"PayPal's transaction history shows ${r0['amount']:,.2f} for invoice {inv} already on its way, "
+                                   f"sent {_when(r0, with_time=True)}, status {r0['status']} (transaction {r0['id']}), a payment not made "
+                                   "through Receipts. Pay again only if you know that payment failed.",
+                                   {"invoice": inv, "paypal_status": r0["status"], "sent": f"{r0['date']} {r0['time']}", "source": "transaction_search"}))
             elif flying and self.p.get("hold_payment_in_flight", True):
                 r0 = flying[0]
                 out.append(Finding("PAYMENT_IN_FLIGHT", "HOLD",
                                    f"PayPal shows a payment for invoice {inv} already on its way: ${r0['amount']:,.2f} to {r0['receiver']}, "
                                    f"sent {_when(r0, with_time=True)}, status {r0['status']}. The reminder crossed it. "
                                    "Pay again only if you know that payment failed.",
-                                   {"invoice": inv, "paypal_status": r0["status"], "sent": f"{r0['date']} {r0['time']}"}))
+                                   {"invoice": inv, "paypal_status": r0["status"], "sent": f"{r0['date']} {r0['time']}", **read(r0)}))
             days = int(self.p.get("near_duplicate_days", 45) or 0)
             if days and not done and not flying:
                 # the same supplier, the same amount, another invoice number, recently: a re-sent bill under a new number

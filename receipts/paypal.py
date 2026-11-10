@@ -2,8 +2,11 @@
 
 Receipts decides from PayPal's OWN records, not from the email in front of the
 agent: what was actually captured on an order, what was already refunded,
-whether tracking shows the parcel delivered, which invoice numbers PayPal has
-already paid out. And when it allows a money move, the move happens in PayPal.
+whether tracking shows the parcel delivered, and the status PayPal gives the
+payouts already made for an invoice number. And when it allows a money move,
+the move happens in PayPal. (Exactly what is asked of PayPal at decision time
+in sandbox mode, and what is not, is set out above LOOKUP_TIMEOUT below and in
+the README's "Honest limits".)
 
   SandboxPayPal  The agent's PayPal tools go through PayPal's OFFICIAL MCP
                  server (@paypal/mcp, run locally in sandbox mode): get_order,
@@ -36,6 +39,26 @@ import requests
 SANDBOX_BASE = "https://api-m.sandbox.paypal.com"
 HERE = Path(__file__).resolve().parent
 ROOT = HERE.parent
+
+# What Receipts asks PayPal at the moment it decides a supplier payment (sandbox backend):
+#   1. the CURRENT status of every payout it knows a PayPal id for and that matches the invoice
+#      (GET /v1/payments/payouts/{id}); always on.
+#   2. payments made outside Receipts: PayPal's Transaction Search for the last 31 days, every status, matched
+#      on the invoice number (GET /v1/reporting/transactions). Off unless RECEIPTS_TRANSACTION_SEARCH=1: it is
+#      new and was checked against a test double only, and the demo replays the same invoice numbers into one
+#      sandbox account, where an earlier replay's payment would look like a payment already made.
+# Both are read-only and fail safe: any error, timeout or missing permission leaves the decision exactly as it
+# was before the lookup existed. Neither ever raises into the verdict.
+LOOKUP_TIMEOUT = 8.0                 # seconds PayPal gets to answer a decision-time lookup
+SEARCH_DAYS = 31                     # Transaction Search's maximum window
+SEARCH_MAX_PAGES = 3                 # 500 rows a page
+# payout item and batch statuses, as PayPal documents them; anything else is not trusted and the last known status stands
+NOT_PAID = {"FAILED", "RETURNED", "BLOCKED", "REFUNDED", "REVERSED", "DENIED", "CANCELED"}
+SEARCH_STATUS = {"S": "SUCCESS", "P": "PENDING", "D": "DENIED", "V": "REVERSED"}
+
+
+def transaction_search_on() -> bool:
+    return os.environ.get("RECEIPTS_TRANSACTION_SEARCH", "0") == "1"
 
 
 def creds() -> tuple[str | None, str | None]:
@@ -395,6 +418,7 @@ class SandboxPayPal:
         # every seeded payout is made real (SUCCESS) in the sandbox; days that need a pending or failed
         # payout run on the stand-in (make_paypal), because the sandbox cannot hold a payout in that state on request
         self.history = [_history_entry(p, scenario_id, i) for i, p in enumerate(seed.get("payout_history", []))]
+        self.from_paypal: set[str] = set()      # payout batch ids PayPal itself issued (the only ones worth asking it about)
         self.orders: dict[str, dict] = {}
         self.seed_log: list[str] = []
         self.mcp = _MCPBridge(self.token())
@@ -448,6 +472,7 @@ class SandboxPayPal:
                 continue
             made = self.history.pop()                     # the seeded entry already stands for it; keep its date, take PayPal's id
             self.history[i]["id"] = made["id"]
+            self.from_paypal.add(made["id"])
             # PayPal's word on the payout, not ours: a payout to an email with no sandbox account comes back
             # UNCLAIMED (a payment still on its way); one to a sandbox account comes back SUCCESS.
             status = self.payout_status(made["id"])
@@ -455,12 +480,69 @@ class SandboxPayPal:
                 self.history[i]["status"] = status
                 self.history[i]["paypal_said"] = status
 
-    def payout_status(self, payout_batch_id: str) -> str | None:
-        j = self.get_payout(payout_batch_id)
+    def payout_status(self, payout_batch_id: str, timeout: float = 60) -> str | None:
+        j = self._rest("GET", f"/v1/payments/payouts/{payout_batch_id}", timeout=timeout)
         items = j.get("items") or []
         if items:
             return str(items[0].get("transaction_status") or "").upper() or None
         return str((j.get("batch_header") or {}).get("batch_status") or "").upper() or None
+
+    def live_payout_status(self, payout_batch_id: str) -> str | None:
+        """PayPal's current word on one payout, asked now with a short timeout. None when PayPal does not answer,
+        answers with an error, or answers with a status this code does not know: the caller then keeps the last
+        status it read. Never raises."""
+        try:
+            status = self.payout_status(payout_batch_id, timeout=LOOKUP_TIMEOUT)
+        except Exception:  # noqa: BLE001
+            return None
+        if status == "PROCESSING":          # a batch PayPal is still working on: a payment on its way
+            status = "PENDING"
+        return status if status in PAID | IN_FLIGHT | NOT_PAID else None
+
+    def transaction_search(self, invoice: str, days: int = SEARCH_DAYS) -> dict:
+        """Read-only: money PayPal's Transaction Search shows going OUT for this invoice number in the last `days`
+        days, in every status (the status filter is left off). PayPal has no invoice filter, so each row's
+        invoice_id and custom_field are compared, and its subject and note are searched for the number as a whole
+        word. PayPal says a transaction can take up to three hours to appear here. Returns
+        {"hits": [...], "rows": n} or {"hits": [], "error": why}. Never raises."""
+        import re
+        from datetime import datetime, timedelta, timezone
+        from urllib.parse import urlencode
+        inv = str(invoice or "").strip().upper()
+        if not inv:
+            return {"hits": [], "rows": 0}
+        word = re.compile(r"(?<![A-Z0-9-])" + re.escape(inv) + r"(?![A-Z0-9-])")
+        end = datetime.now(timezone.utc)
+        start = end - timedelta(days=min(int(days), SEARCH_DAYS))
+        hits, rows, page = [], 0, 1
+        try:
+            while page <= SEARCH_MAX_PAGES:
+                q = urlencode({"start_date": start.strftime("%Y-%m-%dT%H:%M:%SZ"), "end_date": end.strftime("%Y-%m-%dT%H:%M:%SZ"),
+                               "fields": "transaction_info", "page_size": 500, "page": page})
+                j = self._rest("GET", f"/v1/reporting/transactions?{q}", timeout=LOOKUP_TIMEOUT)
+                if not isinstance(j, dict) or "error" in j:
+                    return {"hits": [], "error": str(j)[:300]}
+                for row in j.get("transaction_details") or []:
+                    rows += 1
+                    t = row.get("transaction_info") or {}
+                    exact = {str(t.get(k) or "").strip().upper() for k in ("invoice_id", "custom_field")}
+                    text = " ".join(str(t.get(k) or "") for k in ("transaction_subject", "transaction_note")).upper()
+                    if inv not in exact and not word.search(text):
+                        continue
+                    value = float(str((t.get("transaction_amount") or {}).get("value") or "0").replace(",", ""))
+                    status = SEARCH_STATUS.get(str(t.get("transaction_status") or "").strip().upper())
+                    if value >= 0 or not status:              # money coming in, or a status this code does not know
+                        continue
+                    when = str(t.get("transaction_initiation_date") or "")
+                    hits.append({"invoice": inv, "receiver": "", "amount": round(-value, 2), "status": status,
+                                 "date": when[:10], "time": when[11:16], "id": str(t.get("transaction_id") or ""),
+                                 "source": "transaction_search"})
+                if page >= int(j.get("total_pages") or 1):
+                    break
+                page += 1
+        except Exception as e:  # noqa: BLE001
+            return {"hits": [], "error": f"{type(e).__name__}: {str(e)[:200]}"}
+        return {"hits": hits, "rows": rows}
 
     def in_flight_as_seeded(self) -> list[str]:
         """Seeded payouts that were meant to be on their way but PayPal reports as settled or failed."""
@@ -488,8 +570,8 @@ class SandboxPayPal:
             SandboxPayPal._tok = (j["access_token"], time.time() + int(j.get("expires_in", 3000)))
             return j["access_token"]
 
-    def _rest(self, method: str, path: str, body: dict | None = None) -> dict:
-        r = requests.request(method, f"{self.base}{path}", json=body, timeout=60,
+    def _rest(self, method: str, path: str, body: dict | None = None, timeout: float = 60) -> dict:
+        r = requests.request(method, f"{self.base}{path}", json=body, timeout=timeout,
                              headers={"Authorization": f"Bearer {self.token()}", "Content-Type": "application/json",
                                       "PayPal-Request-Id": uuid.uuid4().hex, "Prefer": "return=representation"})
         try:
@@ -524,8 +606,33 @@ class SandboxPayPal:
         return {h["invoice"] for h in self.history if h["status"] in PAID | IN_FLIGHT}
 
     def payout_records(self, invoice: str) -> list[dict]:
+        """The payouts for this invoice number, as PayPal reports them NOW.
+
+        PayPal looks a payout up by its own id, not by invoice number, so the list of which payouts belong to an
+        invoice is Receipts' own (the ones made through it, and the day's seeded ones). What PayPal is asked at
+        decision time is each one's current status; if it does not answer, the last status read stands. With
+        RECEIPTS_TRANSACTION_SEARCH=1, payments PayPal's Transaction Search shows for the invoice that Receipts
+        did not make are added, marked source="transaction_search" (the rules hold those for the owner)."""
         inv = str(invoice or "").strip().upper()
-        return [dict(h) for h in self.history if h["invoice"] == inv]
+        recs = []
+        for h in self.history:
+            if h["invoice"] != inv:
+                continue
+            if h.get("id") in getattr(self, "from_paypal", ()):
+                live = self.live_payout_status(h["id"])
+                if live:
+                    h["status"], h["paypal_said"], h["status_read"] = live, live, "live"
+                else:
+                    h["status_read"] = "last known"
+            recs.append(dict(h))
+        if inv and transaction_search_on():
+            outside = self.transaction_search(inv).get("hits", [])
+            for known in recs:              # a payout Receipts already knows is not also a payment made outside it
+                same = next((x for x in outside if abs(x["amount"] - known["amount"]) < 0.005), None)
+                if same:
+                    outside.remove(same)
+            recs += outside
+        return recs
 
     def payouts_to(self, receiver: str) -> list[dict]:
         r = str(receiver or "").strip().lower()
@@ -572,6 +679,8 @@ class SandboxPayPal:
             return j
         self.history.append({"invoice": str(invoice_number).upper(), "receiver": receiver, "amount": _money(amount), "status": "SUCCESS",
                              "date": TODAY, "time": time.strftime("%H:%M"), "id": j["batch_header"]["payout_batch_id"]})
+        if hasattr(self, "from_paypal"):
+            self.from_paypal.add(j["batch_header"]["payout_batch_id"])
         return {"payout_batch_id": j["batch_header"]["payout_batch_id"], "batch_status": j["batch_header"].get("batch_status"),
                 "backend": self.backend}
 

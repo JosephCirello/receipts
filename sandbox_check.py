@@ -2,11 +2,16 @@
 """Check every PayPal path Receipts uses, against YOUR sandbox, one step at a time.
 
   python sandbox_check.py        # needs PAYPAL_CLIENT_ID / PAYPAL_CLIENT_SECRET or ~/.paypal_sandbox
+  python sandbox_check.py --search INV-123      # read-only: Transaction Search for one invoice number, nothing created
 
 Steps: OAuth token; PayPal's official MCP server starts; a card order is created and
 captured; tracking is recorded through the MCP server; the capture is read back; the
 order and its tracking are read through the MCP server; a partial refund goes through
-the MCP server and shows on the capture; a payout is created and read back.
+the MCP server and shows on the capture; a payout is created and read back; then the two
+read-only lookups Receipts makes when it decides a supplier payment: the payout's current
+status, and PayPal's Transaction Search for the invoice number (added 2026-11-10 and, until
+this script is run, checked against a test double only; it needs the Transaction Search
+permission on the sandbox app, and PayPal says a payment can take up to three hours to show).
 Sandbox only: a non-sandbox PayPal URL is refused in code.
 """
 from __future__ import annotations
@@ -59,12 +64,54 @@ def run():
         step("tracking read through the MCP server (get_shipment_tracking)", lambda: pp.get_shipment_tracking(oid))
         step("partial refund $20 through the MCP server (create_refund)", lambda: pp.create_refund(cap, 20, "Receipts sandbox check"))
         step("refund visible on the capture record", lambda: pp.capture_record(cap))
-    bid = step("payout $1.00 (Payouts REST)", lambda: pp.create_payout("sb-receipts-check@example.com", 1.00, f"CHECK-{int(time.time())}", "check"))
+    invoice = f"CHECK-{int(time.time())}"
+    bid = step("payout $1.00 (Payouts REST)", lambda: pp.create_payout("sb-receipts-check@example.com", 1.00, invoice, "check"))
     if bid and bid.get("payout_batch_id"):
         time.sleep(3)
         step("payout read back", lambda: {k: v for k, v in pp.get_payout(bid["payout_batch_id"]).items() if k in ("batch_header", "error")})
+
+        # The two lookups below only read. They are what Receipts asks PayPal when it decides a supplier payment.
+        def live():
+            status = pp.live_payout_status(bid["payout_batch_id"])
+            return {"status_now": status} if status else {"error": "PayPal gave no status this code knows within the short timeout"}
+
+        step("decision-time read: the payout's current status (GET /v1/payments/payouts/{id})", live)
+        step("decision-time read: the records Receipts would decide this invoice from", lambda: {"records": pp.payout_records(invoice)})
+
+    step("Transaction Search, last 31 days, every status (GET /v1/reporting/transactions; needs that permission on the app)",
+         lambda: search(pp, invoice))
+    print(f"  Later, to see whether that payout has reached Transaction Search:  python sandbox_check.py --search {invoice}")
     pp.close()
 
 
+def search(pp, invoice):
+    out = pp.transaction_search(invoice)
+    if out.get("error"):
+        return out
+    return {"invoice": invoice, "rows_scanned": out["rows"], "hits_for_this_invoice": out["hits"],
+            "note": "0 hits is expected for a payout made minutes ago: PayPal says up to three hours."}
+
+
+def search_only(invoice):
+    """Read-only: nothing is created. Asks Transaction Search for one invoice number."""
+    if not all(creds()):
+        raise SystemExit("No sandbox credentials.")
+    holder: dict = {}
+
+    def start():
+        # ids on file: nothing is seeded, so no order and no payout is made
+        holder["pp"] = SandboxPayPal({"orders": [], "payout_history": [], "disputes": []}, "CHECK", seeded_ids={"none": "none"})
+        return {"started": True}
+
+    step("token and PayPal's official MCP server (nothing created)", start)
+    pp = holder.get("pp")
+    if pp:
+        step(f"Transaction Search for {invoice}, last 31 days, every status", lambda: search(pp, invoice))
+        pp.close()
+
+
 if __name__ == "__main__":
-    run()
+    if "--search" in sys.argv:
+        search_only(sys.argv[sys.argv.index("--search") + 1])
+    else:
+        run()
