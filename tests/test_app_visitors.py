@@ -105,6 +105,26 @@ def test_approving_your_own_held_payment_sends_it_to_paypal(clients):
     assert a.get("/api/holds").json()[0]["status"] == "APPROVED"
 
 
+def test_a_held_payment_the_server_no_longer_has_answers_404(clients):
+    """The held payments live in the server's memory. After a restart they are gone, and the phone's Approve or
+    Decline for one gets a 404; the page turns that into its plain "this one has expired" card (static/app.js)."""
+    a, _ = clients
+    never_held = {"session": "0123456789", "hold_id": "no-such-hold"}
+    assert a.post("/api/decline", json=never_held).status_code == 404
+    assert a.post("/api/approve", json=never_held).status_code == 404
+    run_day(a)
+    h = waiting(a)[0]
+    body = {"session": h["session"], "hold_id": h["id"]}
+    assert a.post("/api/reset").json() == {"reset": True}           # the same loss of memory, for this visitor only
+    assert a.get("/api/holds").json() == []                         # the phone is told there is nothing waiting
+    res = a.post("/api/decline", json=body)
+    assert res.status_code == 404 and res.json() == {"detail": "session expired"}
+    assert a.post("/api/approve", json=body).status_code == 404     # and nothing can be sent to PayPal from it
+    # the page has the words for it, and the way back to the Watch tab
+    script = a.get("/static/app.js").text
+    assert "This one has expired" in script and "Back to Watch" in script
+
+
 def test_unticking_a_rule_changes_only_that_visitors_runs(clients):
     a, b = clients
     rules = a.get("/api/policy").json()

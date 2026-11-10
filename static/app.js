@@ -87,6 +87,7 @@ async function runDay() {
   const s3 = $("#step3").getBoundingClientRect();           // bring the two sides into view as they start to fill
   if (s3.top > innerHeight * 0.55) window.scrollTo({ top: scrollY + s3.top - 80, behavior: "smooth" });
   Object.values(ARMS).forEach((a) => a.es && a.es.close());
+  GONE = []; drawHolds();                      // a new run: the "expired" notes from before have done their job
   modes.forEach(resetArm);
   let urls = {};
   if (source === "live") {
@@ -265,27 +266,76 @@ function gapText(g) {
 
 /* ---------- owner ---------- */
 const LOGO = `<svg viewBox="0 0 100 100" aria-hidden="true"><rect width="100" height="100" rx="22" fill="#14213d"/><path d="M26 84V16h21c15 0 24 8 24 21s-9 21-24 21H26m17 0l30 26" fill="none" stroke="#fffdf8" stroke-width="13" stroke-linecap="round" stroke-linejoin="round"/><path d="M55 70l12 12 26-28" fill="none" stroke="#1f9d55" stroke-width="13" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
-async function pollHolds() {
-  let hs = [];
-  try { hs = await (await fetch("/api/holds")).json(); } catch { return; }
-  const waiting = hs.filter((h) => h.status === "WAITING").length;
+// A visitor's held payments live in the server's memory. When the server restarts, or a run is more than an hour
+// old, they are gone from it: the card on the phone then says so in plain words instead of keeping buttons that do nothing.
+const EXPIRED_TEXT = "This one has expired, because the demo restarted or it waited too long. Go back to Watch and press Run the day again.";
+const NO_HOLDS = $("#holds").innerHTML;          // the phone with nothing on it, as the page ships it
+const holdKey = (h) => h.session + "/" + h.id;
+let SHOWN = [];                                  // the held payments the server lists for this visitor, as last heard
+let GONE = [];                                   // ones that were waiting on the phone and are no longer on the server
+let HOLDS_ASKED = 0, HOLDS_DRAWN = 0;            // answers are drawn in the order they were asked for, never an older one over a newer
+function holdTitle(h) {
+  const a = h.args || {};
+  return h.tool === "create_payout" ? `Pay ${a.vendor}` : h.tool === "create_refund" ? "Refund a customer" : h.tool === "accept_dispute_claim" ? "Concede a dispute" : h.tool;
+}
+function holdCard(h) {
+  return `<div class="hold"><div class="nt">${LOGO}<span>RECEIPTS</span><span class="when">${h.status === "WAITING" ? "needs you" : "done"}</span></div><div class="ttl">${esc(holdTitle(h))} · ${esc(h.scenario)}</div><div class="amt">${usd(h.amount)}</div><ul>${(h.why || []).map((w) => `<li>${esc(w)}</li>`).join("")}</ul>${h.status === "WAITING"
+    ? `<div class="btns"><button class="approve" data-s="${h.session}" data-h="${h.id}">Approve</button><button class="decline" data-s="${h.session}" data-h="${h.id}">Decline</button></div>`
+    : `<div class="state ${h.status}">${h.status === "APPROVED" ? `Approved · sent to PayPal ${esc((h.result || {}).backend || "")} · ${esc((h.result || {}).payout_batch_id || (h.result || {}).id || "")} · ${esc((h.result || {}).batch_status || (h.result || {}).status || "")}` : "Declined · never sent to PayPal"}</div>`}</div>`;
+}
+function expiredCard(h) {
+  return `<div class="hold expired" role="status"><div class="nt">${LOGO}<span>RECEIPTS</span><span class="when">expired</span></div><div class="ttl">${esc(holdTitle(h))} · ${esc(h.scenario)}</div><div class="amt">${usd(h.amount)}</div><p class="gone">${EXPIRED_TEXT}</p><button class="to-watch">Back to Watch</button></div>`;
+}
+function expireHold(session, id) {
+  const k = session + "/" + id;
+  const h = SHOWN.find((x) => holdKey(x) === k);
+  if (!h) return;
+  SHOWN = SHOWN.filter((x) => x !== h);
+  if (!GONE.some((g) => holdKey(g) === k)) GONE.push(h);
+  drawHolds();
+}
+function drawHolds() {
+  const isWaiting = (h) => h.status === "WAITING";
+  const waiting = SHOWN.filter(isWaiting).length;
   $("#holdCount").hidden = !waiting; $("#holdCount").textContent = waiting;
   const box = $("#holds");
-  if (!hs.length) return;
-  const sig = JSON.stringify(hs.map((h) => [h.id, h.status]));
+  const sig = JSON.stringify([SHOWN.map((h) => [h.session, h.id, h.status]), GONE.map(holdKey)]);
   if (sig === box.dataset.sig) return;          // unchanged: do not re-render (keeps the cards steady)
   box.dataset.sig = sig;
-  box.innerHTML = hs.map((h) => {
-    const a = h.args || {};
-    const ttl = h.tool === "create_payout" ? `Pay ${a.vendor}` : h.tool === "create_refund" ? "Refund a customer" : h.tool === "accept_dispute_claim" ? "Concede a dispute" : h.tool;
-    return `<div class="hold"><div class="nt">${LOGO}<span>RECEIPTS</span><span class="when">${h.status === "WAITING" ? "needs you" : "done"}</span></div><div class="ttl">${esc(ttl)} · ${esc(h.scenario)}</div><div class="amt">${usd(h.amount)}</div><ul>${(h.why || []).map((w) => `<li>${esc(w)}</li>`).join("")}</ul>${h.status === "WAITING"
-      ? `<div class="btns"><button class="approve" data-s="${h.session}" data-h="${h.id}">Approve</button><button class="decline" data-s="${h.session}" data-h="${h.id}">Decline</button></div>`
-      : `<div class="state ${h.status}">${h.status === "APPROVED" ? `Approved · sent to PayPal ${esc((h.result || {}).backend || "")} · ${esc((h.result || {}).payout_batch_id || (h.result || {}).id || "")} · ${esc((h.result || {}).batch_status || (h.result || {}).status || "")}` : "Declined · never sent to PayPal"}</div>`}</div>`;
-  }).join("");
-  box.querySelectorAll("button").forEach((b) => b.addEventListener("click", async () => {
-    await fetch(b.classList.contains("approve") ? "/api/approve" : "/api/decline", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ session: b.dataset.s, hold_id: b.dataset.h }) });
+  if (!SHOWN.length && !GONE.length) { box.innerHTML = NO_HOLDS; return; }
+  box.innerHTML = SHOWN.filter(isWaiting).map(holdCard).join("") + GONE.map(expiredCard).join("") + SHOWN.filter((h) => !isWaiting(h)).map(holdCard).join("");
+  box.querySelectorAll(".to-watch").forEach((b) => b.addEventListener("click", () => showTab("live")));
+  box.querySelectorAll(".btns button").forEach((b) => b.addEventListener("click", async () => {
+    let res = null;
+    try {
+      res = await fetch(b.classList.contains("approve") ? "/api/approve" : "/api/decline", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ session: b.dataset.s, hold_id: b.dataset.h }) });
+    } catch {}
+    if (!res) {                                  // the tap never reached the server: say so, and leave the buttons to try again
+      const card = b.closest(".hold");
+      if (card && !card.querySelector(".retry")) card.insertAdjacentHTML("beforeend", `<p class="retry" role="status">That tap did not reach the demo. Check your connection and tap again.</p>`);
+      return;
+    }
+    if (!res.ok) expireHold(b.dataset.s, b.dataset.h);      // the server no longer has this payment (404 after a restart)
     pollHolds();
   }));
+}
+async function pollHolds() {
+  const asked = ++HOLDS_ASKED;
+  let hs;
+  try {
+    const res = await fetch("/api/holds");
+    if (!res.ok) return;
+    hs = await res.json();
+  } catch { return; }
+  if (!Array.isArray(hs) || asked < HOLDS_DRAWN) return;
+  HOLDS_DRAWN = asked;
+  const here = new Set(hs.map(holdKey));
+  // a payment that was waiting on the phone and is no longer on the server has expired; one the server still lists has not
+  SHOWN.forEach((h) => { if (h.status === "WAITING" && !here.has(holdKey(h)) && !GONE.some((g) => holdKey(g) === holdKey(h))) GONE.push(h); });
+  GONE = GONE.filter((g) => !here.has(holdKey(g)));
+  // with nothing on the server, the cards already answered stay on the phone as they were (a record of the tap)
+  SHOWN = hs.length ? hs : SHOWN.filter((h) => h.status !== "WAITING");
+  drawHolds();
 }
 
 /* ---------- rules ---------- */

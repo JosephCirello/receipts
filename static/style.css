@@ -187,6 +187,12 @@ h2 { font-size: 18px; margin: 0 0 10px; letter-spacing: -.01em; }
 .hold .state { font: 700 13px var(--mono); color: var(--muted); padding: 10px 12px; border-radius: 12px; background: var(--bg); }
 .hold .state.APPROVED { color: var(--ok); background: var(--ok-bg); }
 .hold .state.DECLINED { color: var(--bad); background: var(--bad-bg); }
+/* a held payment the server no longer has (it restarted, or the run is over an hour old): one plain sentence and the way back */
+.hold.expired .ttl, .hold.expired .amt { color: var(--muted); }
+.hold.expired .amt { text-decoration: line-through; text-decoration-thickness: 2px; }
+.hold .gone { margin: 10px 0 12px; padding: 10px 12px; border-radius: 12px; background: var(--hold-bg); color: var(--ink); font-size: 14px; line-height: 1.45; }
+.hold .to-watch { display: block; width: 100%; border: 0; padding: 12px 10px; border-radius: 14px; font-weight: 700; font-size: 15px; cursor: pointer; background: var(--ink); color: var(--paper); }
+.hold .retry { margin: 10px 0 0; font-size: 13px; color: var(--bad); }
 .empty { color: var(--muted); font-size: 14px; text-align: center; padding: 40px 14px; }
 .owner-side { max-width: 620px; padding-top: 120px; font-size: 19px; line-height: 1.55; color: var(--ink-2); }
 .owner-side h2 { font-size: 40px; letter-spacing: -.02em; color: var(--ink); }
