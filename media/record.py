@@ -124,6 +124,29 @@ def shot_sbs(page, base, scenario, model, speed=1.4, hold=4, rep=None, follow=Tr
         time.sleep(5)
 
 
+# where the summary bar sits in the window, in page pixels (printed with the take, to place it in the cut)
+BAR_BOX = """(s) => { const r = document.querySelector("#outcome").getBoundingClientRect();
+  return [r.x / s, r.y / s, r.width / s, r.height / s].map((v) => Math.round(v * 10) / 10); }"""
+
+
+def shot_summary(page, base, scenario, model, rep=None):
+    """The app's own summary of a side-by-side day, in a window narrow enough that the app stacks it: the
+    "Without Receipts" sentence above the "With Receipts" one. Same day, model and recorded run as the side-by-side take."""
+    page.goto(f"{base}/?scenario={scenario}&model={model}&speed=6&clean=1" + (f"&rep={rep}" if rep is not None else ""))
+    page.wait_for_selector(".mail")
+    time.sleep(1.0)
+    mark("run the day")
+    page.click("#go")
+    page.wait_for_function("document.querySelectorAll('.done').length >= 2", timeout=240_000)
+    page.wait_for_selector("#outcome:not([hidden])", timeout=30_000)
+    mark("both sides finished, the summary is on the page")
+    page.evaluate(SUMMARY)
+    time.sleep(1.2)
+    mark("summary in the middle of the window")
+    print("  the summary bar, in page pixels (x, y, width, height):", page.evaluate(BAR_BOX, SCALE[0]), flush=True)
+    time.sleep(6)
+
+
 def shot_rules(page, base):
     """Her rules in her words on the left; one press, and what Receipts understood on the right, each with her words under it."""
     page.goto(f"{base}/#rules")
@@ -290,7 +313,10 @@ def render_rings():
 # a take in a window of another size (page pixels). The opening's strip is the top of the "Without Receipts" side,
 # never scrolled, in a window just wide enough for the two sides to stand side by side: the strip is then
 # narrow, so the cut can show its own words large.
-WINDOW = {"strip_s14": (1120, 1080)}
+WINDOW = {"strip_s14": (1120, 1080), "summary_s14": (576, 640)}
+# ...and at another magnification. The summary bar is shown almost alone and large, so its take is recorded at 4x; at 576
+# page pixels wide the app puts its two sentences on two lines, each still whole.
+MAGNIFIED = {"summary_s14": 4}
 
 SHOTS = {
     "live_split": lambda p, b: shot_single(p, b, "S3_three_smaller_invoices", NEMO),
@@ -301,6 +327,7 @@ SHOTS = {
     "sbs_s2": lambda p, b: shot_sbs(p, b, "S2_second_notice", "glm-5.2"),
     "sbs_s14": lambda p, b: shot_sbs(p, b, "S14_crossed_in_the_mail", S14_MODEL, speed=1.2, hold=3, rep=0),
     "strip_s14": lambda p, b: shot_sbs(p, b, "S14_crossed_in_the_mail", S14_MODEL, speed=1.2, hold=5, rep=0, follow=False),
+    "summary_s14": lambda p, b: shot_summary(p, b, "S14_crossed_in_the_mail", S14_MODEL, rep=0),
     "owner_s14": lambda p, b: shot_owner(p, b, "S14_crossed_in_the_mail", S14_MODEL, button="decline", read=6, after=5),
     "rules": shot_rules,
     "ledger": shot_ledger,
@@ -332,7 +359,8 @@ def record(shot, url, theme):
     TAKES.mkdir(exist_ok=True)
     tmp = TAKES / f"_tmp_{shot}"
     shutil.rmtree(tmp, ignore_errors=True)
-    s = SCALE[0]
+    usual = SCALE[0]
+    s = SCALE[0] = MAGNIFIED.get(shot, usual)       # tap() and glide() read it too
     w, h = WINDOW.get(shot, (W, H))
     with sync_playwright() as pw:
         br = pw.chromium.launch()
@@ -346,6 +374,7 @@ def record(shot, url, theme):
         vid = page.video.path()
         ctx.close()
         br.close()
+    SCALE[0] = usual
     out = TAKES / f"{shot}.webm"
     shutil.move(vid, out)
     shutil.rmtree(tmp, ignore_errors=True)
