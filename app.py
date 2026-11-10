@@ -46,8 +46,20 @@ from receipts.mcp_server import build as build_mcp  # noqa: E402
 MCP_SERVER, MCP_RECEIPTS = build_mcp(register=lambda r: SESSIONS.__setitem__("mcp", {"r": r, "t": 9e18}))
 
 
+def _warm():
+    """Parse the recorded runs once at start-up, so the first visitor to Results or the Ledger does not wait
+    (on a small hosted machine the first parse takes several seconds)."""
+    try:
+        from receipts import measure
+        measure.results(RESULTS, "all")
+        _episodes()
+    except Exception:  # noqa: BLE001
+        pass
+
+
 @asynccontextmanager
 async def lifespan(_app):
+    threading.Thread(target=_warm, daemon=True).start()
     async with MCP_SERVER.session_manager.run():
         yield
 
@@ -174,11 +186,17 @@ def run(scenario: str, model: str, mode: str = "enforce"):
 
 
 def _episodes() -> list[dict]:
+    """Every recorded run with its line number (the replay index), parsed once and reused until the file changes."""
+    from receipts import measure
     p = RESULTS / "episodes_scored.jsonl"
     if not p.exists():
         p = RESULTS / "episodes.jsonl"
     if not p.exists():
         return []
+    return measure.cached(("episodes", str(p)), measure._stamp(p), lambda: _parse_episodes(p))
+
+
+def _parse_episodes(p: Path) -> list[dict]:
     out = []
     for i, line in enumerate(p.read_text(encoding="utf-8").splitlines()):
         try:

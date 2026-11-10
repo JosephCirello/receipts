@@ -1,4 +1,9 @@
-# Render blueprint: a hosted demo judges can open. Free plan sleeps when idle; first load can take a minute.
+# Render blueprint: a hosted demo judges can open. Free plan sleeps when idle; the first load can take a minute.
+#
+# The hosted demo runs on the PayPal stand-in, on purpose: every recorded run replayed on PayPal's real sandbox
+# creates real sandbox orders and payouts, and a sandbox account's play money is set once, when it is created,
+# so a public demo clicked by many judges would run it dry before judging ends. The video shows the same runs
+# on PayPal's real sandbox; README "With your PayPal sandbox" runs them against yours with two keys.
 services:
   - type: web
     name: receipts
@@ -9,8 +14,4 @@ services:
       - key: RECEIPTS_LIVE
         value: "0"            # recorded real runs only; no model key on the public demo
       - key: PAYPAL_MODE
-        value: auto           # sandbox when the two keys below are set, the stand-in otherwise
-      - key: PAYPAL_CLIENT_ID
-        sync: false
-      - key: PAYPAL_CLIENT_SECRET
-        sync: false
+        value: standin

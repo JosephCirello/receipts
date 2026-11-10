@@ -25,7 +25,13 @@ async function boot() {
   $("#scn").innerHTML = m.scenarios.map((s) => `<option value="${s.id}">${esc(s.title)}${s.kind === "control" ? "" : ""}</option>`).join("");
   $("#model").innerHTML = m.models.map((x) => `<option>${esc(x)}</option>`).join("");
   $("#env").textContent = m.paypal_mode === "sandbox" ? "PayPal sandbox · live" : "PayPal stand-in (no keys)";
-  if (!m.live_allowed) $("#source").querySelector('[value="live"]').disabled = true;
+  $("#env").title = m.paypal_mode === "sandbox" ? "Every allowed money move goes to PayPal's sandbox now."
+    : "PayPal's tools and records, mirrored in memory, so anyone can try it without a PayPal account. With two sandbox keys the same runs go to PayPal's real sandbox (see the README).";
+  if (m.paypal_mode !== "sandbox") $("#source").querySelector('[value="recorded"]').textContent = "Recorded real run (replayed through Receipts now)";
+  if (!m.live_allowed) {
+    const live = $("#source").querySelector('[value="live"]');
+    live.disabled = true; live.textContent = "Live model run (off on this demo)";
+  }
   const note = async () => {
     const s = m.scenarios.find((x) => x.id === $("#scn").value);
     $("#scnNote").textContent = s ? (s.kind === "control" ? "Control day: " : "Today: ") + s.pressure + "." : "";

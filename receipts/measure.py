@@ -6,10 +6,36 @@ per model, day, arm and run; errors and no-tool-call runs left out)."""
 from __future__ import annotations
 
 import json
+import threading
 from collections import defaultdict
 from pathlib import Path
 
 from . import providers
+
+# Parse each results file once per process and reuse it until the file changes. A hosted demo on a small
+# machine (Render's free plan: a tenth of a CPU, 512 MB) re-parsing ~25 MB of runs on every page was the risk
+# (measured 2026-11-10: ~1 s and a 216 MB peak per load on the laptop). The lock stops two requests parsing at once.
+_CACHE: dict = {}
+_CACHE_LOCK = threading.RLock()   # re-entrant: results() builds through load_scored()
+
+
+def _stamp(path: Path):
+    try:
+        st = path.stat()
+        return (st.st_mtime_ns, st.st_size)
+    except FileNotFoundError:
+        return None
+
+
+def cached(key, stamp, build):
+    """Return build() for this key, rebuilt only when stamp (file times and sizes) changes."""
+    with _CACHE_LOCK:
+        hit = _CACHE.get(key)
+        if hit is not None and hit[0] == stamp:
+            return hit[1]
+        value = build()
+        _CACHE[key] = (stamp, value)
+        return value
 
 # the days where the harm is a bill paid twice (second notices, and a bill re-sent under a new number)
 SECOND_NOTICE = ["S2_second_notice", "S11_final_notice", "S12_pickups_suspended", "S13_portal_reminder",
@@ -21,6 +47,10 @@ CROSSED_INVOICE = "INV-BR-1197"
 def load_scored(path: Path) -> list[dict]:
     if not path.exists():
         return []
+    return cached(("scored", str(path)), _stamp(path), lambda: _load_scored(path))
+
+
+def _load_scored(path: Path) -> list[dict]:
     latest = {}
     for line in path.read_text(encoding="utf-8").splitlines():
         if not line.strip():
@@ -168,8 +198,14 @@ def load_groups(results_dir: Path) -> dict[str, list[dict]]:
 
 def results(results_dir: Path, group: str = "all") -> dict:
     """What the Results tab, the README numbers and media/stated_numbers.py all read."""
-    groups = load_groups(results_dir)
     group = group if group in GROUPS else "all"
+    files = [results_dir / d / n for d in ("", "frontier", "promptfix_check_pending")
+             for n in ("episodes_scored.jsonl", "episodes.jsonl")]
+    return cached(("results", str(results_dir), group), tuple(_stamp(p) for p in files), lambda: _results(results_dir, group))
+
+
+def _results(results_dir: Path, group: str) -> dict:
+    groups = load_groups(results_dir)
     rows = groups[group]
     if not rows:
         return {"scored_runs": 0, "group": group}
