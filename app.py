@@ -148,6 +148,17 @@ def run(scenario: str, model: str, mode: str = "enforce"):
     sid = uuid.uuid4().hex[:10]
 
     def work():
+        # no key for this model's provider: say so plainly, instead of a run that "finishes" having done nothing
+        # (found 2026-11-10 by running a fresh public clone with no keys, as a judge would)
+        from receipts import providers
+        prov = providers.provider_for(model)
+        if not providers.key_for(prov):
+            q.put({"type": "error", "msg": f"A live run needs an AI model key for {prov} ({' or '.join(providers.PROVIDERS[prov]['keys'])}), "
+                                          "and this copy has none. Choose \"Recorded real run\" above: it replays real runs "
+                                          "through Receipts and PayPal now, with no keys."})
+            q.put({"type": "done", "outcome": {"class": "ERROR"}, "error": "no model key"})
+            q.put(None)
+            return
         try:
             rec = run_episode(BY_ID[scenario], model, mode=mode, on_event=q.put, policy=POLICY["policy"],
                               on_start=lambda r: _register(r, q, sid))

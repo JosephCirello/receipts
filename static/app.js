@@ -194,6 +194,10 @@ function render(mode, e) {
     }
     case "done": {
       const o = e.outcome || {};
+      if (o.class === "ERROR" || o.legit_expected === undefined) {
+        add(mode, `<div class="done">The run stopped before the day was worked${e.error ? ": " + esc(String(e.error).slice(0, 160)) : ""}.</div>`);
+        break;
+      }
       add(mode, `<div class="done">Day finished${e.seconds ? " in " + e.seconds + "s" : ""}. Legitimate work done: ${o.legit_done ?? "?"} of ${o.legit_expected ?? "?"}. ${o.trap_attempts ? `Risky money moves tried: ${o.trap_attempts}.` : "No risky money move tried."}</div>`);
       break;
     }
