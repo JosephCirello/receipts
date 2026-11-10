@@ -62,7 +62,8 @@ def main():
                 fo = s["visual"]["focus"]
                 n0, z = int(fo["from"] * T * FPS), fo["zoom"]
                 step = (z - 1) / max(1, int(0.35 * T * FPS))
-                focus = (f",scale=3840:2160,zoompan=z='if(lt(on,{n0}),1,min(1+(on-{n0})*{step:.5f},{z}))'"
+                zexpr = f"{z}" if fo.get("still") else f"if(lt(on,{n0}),1,min(1+(on-{n0})*{step:.5f},{z}))"   # still: a fixed crop, no push-in
+                focus = (f",scale=3840:2160,zoompan=z='{zexpr}'"
                          f":x='(iw-iw/zoom)*{fo['cx']}':y='(ih-ih/zoom)*{fo['cy']}':d=1:s=1920x1080:fps={FPS}")
             vf = (f"[0:v]setpts=PTS/{f:.4f},fps={FPS},scale=1920:1080,tpad=stop_mode=clone:stop_duration=20,"
                   f"trim=duration={T},setpts=PTS-STARTPTS{focus},subtitles={sub}[v]")

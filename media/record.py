@@ -18,6 +18,12 @@ from playwright.sync_api import sync_playwright
 HERE = Path(__file__).resolve().parent
 TAKES = HERE / "takes"
 W, H = 1920, 1080
+T0 = [0.0]
+
+
+def mark(what):
+    """Print how far into the take a moment falls, to set the scene's start trim in script.json (check by frame)."""
+    print(f"  {time.time() - T0[0]:6.2f}s  {what}", flush=True)
 
 
 def shot_sbs(page, base, scenario, model, speed=1.4, hold=4, rep=None):
@@ -82,7 +88,9 @@ def shot_owner(page, base, scenario="S3_three_smaller_invoices", model=None, but
     page.wait_for_function("document.querySelectorAll('.done').length >= 1", timeout=240_000)
     page.click("#tabs button[data-tab=owner]")
     page.wait_for_selector(f".hold .{button}", timeout=30_000)
+    mark("phone on screen")
     time.sleep(read)
+    mark(f"tap {button}")
     page.click(f".hold .{button}")
     page.wait_for_selector(".hold .state", timeout=30_000)
     time.sleep(3)
@@ -158,6 +166,7 @@ def record(shot, url, theme):
         ctx = br.new_context(viewport={"width": W, "height": H}, device_scale_factor=1, color_scheme=theme,
                              record_video_dir=str(tmp), record_video_size={"width": W, "height": H})
         page = ctx.new_page()
+        T0[0] = time.time()                         # the video starts with the page; mark() prints seconds into the take
         page.request.post(f"{url}/api/reset")       # every take starts with no leftover holds
         SHOTS[shot](page, url)
         vid = page.video.path()

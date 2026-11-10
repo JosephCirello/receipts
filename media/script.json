@@ -100,7 +100,14 @@
    "id": "owner",
    "visual": {
     "take": "owner_s14",
-    "start": 12.2
+    "start": 12.6,
+    "focus": {
+     "from": 0,
+     "zoom": 1.08,
+     "cx": 0.5,
+     "cy": 1.0,
+     "still": true
+    }
    },
    "say": "Maya's phone tells her why. This crossed yesterday's payment. One tap, and it never leaves.",
    "caption": "One tap on the owner's phone, and it never reaches PayPal."
