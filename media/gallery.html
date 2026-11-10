@@ -1,0 +1,123 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Receipts gallery images</title>
+<!-- The Devpost thumbnail and gallery: 1800x1200 (3:2), one plain sentence each, story order. Every number is
+     media/stated_numbers.py's. Rendered by media/gallery.py into media/gallery/. -->
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+<style>
+  :root { --ink:#14213d; --ink2:#3b4a6b; --muted:#6b7690; --paper:#fffdf8; --bg:#f4f1ea; --line:#e3ddd0; --ok:#1f9d55; --okbg:#e8f6ee; --bad:#d23c3c; --badbg:#fdecec; --hold:#c47f00; --holdbg:#fff4dc; }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; width: 1800px; height: 1200px; overflow: hidden; background: var(--bg); color: var(--ink); font-family: Inter, sans-serif; -webkit-font-smoothing: antialiased; }
+  .g { display: none; width: 1800px; height: 1200px; padding: 90px 110px; position: relative; flex-direction: column; }
+  .g.on { display: flex; }
+  .k { font: 700 26px "JetBrains Mono"; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); margin-bottom: 18px; }
+  h1 { font-size: 74px; line-height: 1.05; letter-spacing: -.035em; margin: 0; font-weight: 900; }
+  h1 .bad { color: var(--bad); } h1 .ok { color: var(--ok); }
+  .sub { font-size: 34px; color: var(--ink2); line-height: 1.35; margin-top: 18px; max-width: 1500px; }
+  .shot { margin-top: 44px; flex: 1; min-height: 0; display: flex; align-items: flex-start; justify-content: center; }
+  .shot img { max-width: 100%; max-height: 100%; border-radius: 22px; border: 2px solid var(--line); box-shadow: 0 18px 48px rgba(20,33,61,.12); background: #fff; }
+  .brand { position: absolute; left: 110px; bottom: 52px; display: flex; align-items: center; gap: 14px; font: 800 30px Inter; letter-spacing: -.02em; color: var(--ink); }
+  .brand svg { width: 44px; height: 44px; }
+  .brand span { font: 600 22px Inter; color: var(--muted); letter-spacing: 0; margin-left: 10px; }
+  /* thumbnail */
+  #thumb { background: var(--ink); color: var(--paper); justify-content: center; }
+  #thumb .logo { display: flex; align-items: center; gap: 34px; }
+  #thumb .logo svg { width: 190px; height: 190px; }
+  #thumb .logo .n { font: 900 196px Inter; letter-spacing: -.05em; line-height: 1; }
+  #thumb .line { font: 800 66px Inter; letter-spacing: -.025em; line-height: 1.12; margin-top: 58px; max-width: 1500px; }
+  #thumb .line em { font-style: normal; color: #2fbf6e; }
+  #thumb .cards { display: flex; gap: 26px; margin-top: 64px; }
+  #thumb .c { flex: 1; border-radius: 22px; padding: 24px 28px; font-size: 27px; line-height: 1.3; background: rgba(255,253,248,.07); border: 2px solid rgba(255,253,248,.18); color: #e9ecf3; }
+  #thumb .c b { display: block; font: 700 22px "JetBrains Mono"; letter-spacing: .08em; margin-bottom: 8px; }
+  #thumb .c.hold b { color: #ffbe3d; } #thumb .c.bad b { color: #ff7a7a; } #thumb .c.ok b { color: #5fd892; }
+  /* big numbers */
+  .bigrow { display: flex; gap: 80px; align-items: flex-end; margin-top: 50px; }
+  .big { font: 900 230px Inter; letter-spacing: -.05em; line-height: .9; }
+  .big.bad { color: var(--bad); } .big.ok { color: var(--ok); }
+  .bigtxt { font: 800 52px Inter; letter-spacing: -.02em; line-height: 1.15; max-width: 900px; }
+  .fine { font-size: 27px; color: var(--muted); margin-top: 40px; line-height: 1.4; max-width: 1500px; }
+  .story { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 30px; margin-top: 56px; }
+  .st { background: #fff; border: 2px solid var(--line); border-radius: 24px; padding: 30px 34px; }
+  .st .d { font: 700 22px "JetBrains Mono"; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+  .st .t { font: 800 38px Inter; letter-spacing: -.02em; line-height: 1.18; margin-top: 12px; }
+  .st.badst { border-color: var(--bad); background: var(--badbg); }
+  .pill { display: inline-block; margin-top: 14px; font: 700 22px "JetBrains Mono"; padding: 6px 14px; border-radius: 10px; background: var(--holdbg); color: var(--hold); border: 2px solid #f0d28a; }
+</style>
+</head>
+<body>
+
+<svg width="0" height="0" style="position:absolute"><defs>
+  <symbol id="mark" viewBox="0 0 100 100"><rect width="100" height="100" rx="22" fill="#14213d"/><path d="M26 84V16h21c15 0 24 8 24 21s-9 21-24 21H26m17 0l30 26" fill="none" stroke="#fffdf8" stroke-width="13" stroke-linecap="round" stroke-linejoin="round"/><path d="M55 70l12 12 26-28" fill="none" stroke="#2fbf6e" stroke-width="13" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+  <symbol id="markdark" viewBox="0 0 100 100"><rect width="100" height="100" rx="22" fill="#fffdf8"/><path d="M26 84V16h21c15 0 24 8 24 21s-9 21-24 21H26m17 0l30 26" fill="none" stroke="#14213d" stroke-width="13" stroke-linecap="round" stroke-linejoin="round"/><path d="M55 70l12 12 26-28" fill="none" stroke="#1f9d55" stroke-width="13" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+</defs></svg>
+
+<section class="g" id="thumb">
+  <div class="logo"><svg><use href="#markdark"/></svg><div class="n">Receipts</div></div>
+  <div class="line">If your AI agent moves money on PayPal, <em>make it show its receipts.</em></div>
+  <div class="cards">
+    <div class="c hold"><b>HELD FOR MAYA</b>PayPal shows this bill already on its way. The reminder crossed it.</div>
+    <div class="c bad"><b>STOPPED</b>Not this supplier's PayPal address on record.</div>
+    <div class="c ok"><b>SENT TO PAYPAL</b>An honest bill, to the payee on record.</div>
+  </div>
+</section>
+
+<section class="g" id="story">
+  <div class="k">The problem</div>
+  <h1>Her AI agent paid the same bill twice. <span class="bad">61% of the time.</span></h1>
+  <div class="story">
+    <div class="st"><div class="d">Monday 4:52 PM</div><div class="t">Maya pays her supplier $1,836 through PayPal.</div><span class="pill">STILL ON ITS WAY</span></div>
+    <div class="st"><div class="d">Tuesday morning</div><div class="t">The supplier's computer sends a SECOND NOTICE. It crossed her payment in the mail.</div></div>
+    <div class="st badst"><div class="d">Her AI agent</div><div class="t">Checks PayPal for finished payments, sees nothing, and pays again.</div></div>
+  </div>
+  <div class="fine">Maya's Tuesday, run 38 times across 19 AI models with nothing checking them: 23 of 38 runs paid her twice. Maya and her workshop are fictional; the runs are real.</div>
+  <div class="brand"><svg><use href="#mark"/></svg>Receipts</div>
+</section>
+
+<section class="g" id="sbs">
+  <div class="k">The same AI, the same inbox, twice</div>
+  <h1>Left: nothing checking it, <span class="bad">it pays twice.</span> Right: Receipts <span class="ok">holds it for Maya.</span></h1>
+  <div class="shot"><img src="screenshots/sbs_s14.png" alt=""></div>
+</section>
+
+<section class="g" id="phone">
+  <div class="k">The owner's phone</div>
+  <h1>One tap, with the reason. <span class="ok">Decline, and it never reaches PayPal.</span></h1>
+  <div class="shot"><img src="gallery/src_phone_crop.png" alt=""></div>
+</section>
+
+<section class="g" id="book">
+  <div class="k">Maya's book</div>
+  <h1>Every decision, the reason in plain words, <span class="ok">a download for her accountant.</span></h1>
+  <div class="shot"><img src="screenshots/ledger.png" alt=""></div>
+</section>
+
+<section class="g" id="finding">
+  <div class="k">What we measured</div>
+  <div class="bigrow"><div class="big bad">7.0%</div><div class="bigtxt">of the money unguarded AI agents sent should never have left the business.</div></div>
+  <h1 style="margin-top:56px">Paying 35x more for the AI didn't fix it.</h1>
+  <div class="fine">$70,000 of every $1 million paid, about 100x PayPal's own loss rate. 19 AI models, 19 business days at Maya's shop, 1,444 runs.</div>
+  <div class="brand"><svg><use href="#mark"/></svg>Receipts</div>
+</section>
+
+<section class="g" id="careful">
+  <div class="k">With Receipts</div>
+  <div class="bigrow"><div class="big ok">$0.00</div><div class="bigtxt">left wrongly, for every model, on the same days.</div></div>
+  <h1 style="margin-top:56px">Being careful cost nothing: <span class="ok">98% of honest payments went straight through.</span></h1>
+  <div class="fine">1,038 of 1,064 honest payments and refunds went to PayPal with nobody touching them; Receipts wrongly stopped none. Harm is defined apart from the rules, so a trap Receipts missed would still count against it.</div>
+  <div class="brand"><svg><use href="#mark"/></svg>Receipts</div>
+</section>
+
+<section class="g" id="how">
+  <div class="k">How it works</div>
+  <h1>It sits between any AI agent and PayPal, and checks PayPal's own records first.</h1>
+  <div class="shot"><img src="build/slides/how.png" alt=""></div>
+</section>
+
+<script>
+  const id = new URLSearchParams(location.search).get("g") || (location.hash || "#thumb").slice(1);
+  document.getElementById(id).classList.add("on");
+</script>
+</body>
+</html>
