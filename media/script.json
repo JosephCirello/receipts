@@ -5,8 +5,24 @@
   {
    "id": "hook",
    "visual": {
-    "slide": "hook"
+    "slide": "hook",
+    "inset": {
+     "take": "strip_s14",
+     "start": 13.166,
+     "speed": 1,
+     "crop": [28, 568.5, 523, 81.5],
+     "at": [150, 525],
+     "width": 1620
+    },
+    "ring": {
+     "at": 3.6,
+     "for": 2.3,
+     "box": [1270, 631, 480, 112]
+    }
    },
+   "sfx": [
+    {"at": 3.267, "sound": "ding"}
+   ],
    "say": "Would you let a brand-new hire pay your bills, with nobody checking? Small businesses are starting to do exactly that, with an AI agent.",
    "caption": "Would you let a new hire pay your bills with nobody checking? Businesses are doing that with AI agents."
   },
@@ -30,32 +46,59 @@
    "id": "agent",
    "visual": {
     "take": "sbs_s14",
-    "start": 3.4,
+    "start": 4.65,
     "speed": 1,
     "focus": {
      "keys": [
       [0, 1, 960, 540],
-      [0.6, 1, 960, 540],
-      [2.6, 2.0, 480, 780]
+      [1.5, 2.0, 480, 800, "out"]
      ]
+    },
+    "ring": {
+     "at": 12.95,
+     "for": 1.6,
+     "box": [160, 954, 430, 48]
     }
    },
+   "sfx": [
+    {"at": 12.75, "sound": "ding"}
+   ],
    "say": "Maya's AI agent pays her bills now, and nothing stands between it and PayPal. It does the careful thing, and checks PayPal first. But it looks for completed payments, and hers is still processing. So it finds nothing, and pays again.",
    "caption": "Nothing between the agent and PayPal. It checks for completed payments; hers is still processing. It pays again."
   },
   {
    "id": "receipts",
-   "tail": 1.5,
+   "tail": 1.82,
    "visual": {
     "take": "sbs_s14",
-    "start": 10.3,
+    "start": 11.1,
     "speed": 1,
     "focus": {
      "keys": [
-      [0, 1, 960, 540],
-      [0.5, 1, 960, 540],
-      [2.2, 2.0, 1440, 780]
+      [0, 2.0, 480, 800],
+      [1.4, 2.0, 1440, 800, "out"]
      ]
+    },
+    "ring": {
+     "at": 7.75,
+     "for": 1.6,
+     "box": [1650, 824, 144, 42]
+    },
+    "then": {
+     "at": 9.4,
+     "take": "sbs_s14",
+     "start": 30.5,
+     "speed": 1,
+     "mask": {
+      "keep": [0, 494, 1920, 84],
+      "soft": [0, 12]
+     },
+     "focus": {
+      "keys": [
+       [0, 1.68, 600, 540],
+       [1.3, 1.85, 600, 540, "out"]
+      ]
+     }
     }
    },
    "say": "Receipts sits between the agent and PayPal. It reads every payment status, not just the completed ones. So the second payment is held, with the reason.",
@@ -67,18 +110,23 @@
    "tail": 2.0,
    "visual": {
     "take": "owner_s14",
-    "start": 11.4,
+    "start": 11.03,
     "speed": 1,
     "focus": {
      "keys": [
-      [0, 1, 960, 540],
-      [0.35, 1, 960, 540],
-      [1.3, 1.26, 762, 507],
-      [1.9, 1.26, 762, 507],
-      [3.3, 2.4, 490, 400]
+      [0, 1.26, 762, 507],
+      [1.5, 2.4, 490, 400, "out"]
      ]
+    },
+    "ring": {
+     "at": 6.0,
+     "for": 2.2,
+     "box": [458, 506, 314, 50]
     }
    },
+   "sfx": [
+    {"at": 5.40, "sound": "tap"}
+   ],
    "say": "Maya's phone tells her why. This crossed yesterday's payment. One tap, and it never leaves.",
    "caption": "One tap on the owner's phone, and it never reaches PayPal."
   },
@@ -129,7 +177,11 @@
   {
    "id": "finding2",
    "visual": {
-    "slide": "finding2"
+    "slide": "finding2",
+    "then": {
+     "at": 3.2,
+     "slide": "finding2b"
+    }
    },
    "caption": "",
    "say": "With Receipts, on the same days, not one dollar did. And ninety-eight percent of honest payments went straight through."
@@ -144,8 +196,7 @@
     "focus": {
      "keys": [
       [0, 1, 960, 540],
-      [0.5, 1, 960, 540],
-      [1.9, 2.0, 480, 365],
+      [1.4, 2.0, 480, 365, "out"],
       [5.5, 2.0, 480, 365],
       [6.9, 2.0, 1440, 520]
      ]
@@ -159,6 +210,11 @@
       "keys": [
        [0, 2.0, 1440, 520]
       ]
+     },
+     "ring": {
+      "at": 1.0,
+      "for": 2.2,
+      "box": [962, 637, 332, 69]
      }
     }
    },
@@ -174,9 +230,15 @@
     "focus": {
      "keys": [
       [0, 1, 960, 540],
-      [0.4, 1, 960, 540],
-      [1.9, 1.75, 655, 771]
+      [1.4, 1.75, 655, 771, "out"]
      ]
+    },
+    "ring": {
+     "at": 3.1,
+     "for": 2.1,
+     "box": [301, 804, 164, 31],
+     "stroke": 3.6,
+     "snug": true
     }
    },
    "say": "It also reads what the agent says. An agent wrote, per owner's instruction, on a refund. Maya never gave one, so the money never moved.",
@@ -192,9 +254,14 @@
     "focus": {
      "keys": [
       [0, 1, 960, 540],
-      [1.2, 1, 960, 540],
-      [2.6, 1.9, 625, 796]
+      [1.5, 1.9, 625, 796, "out"]
      ]
+    },
+    "ring": {
+     "at": 5.1,
+     "for": 2.2,
+     "box": [164, 927, 502, 32],
+     "snug": true
     }
    },
    "say": "At the end of the day, it checks the agent's homework. The agent said it made three payments. PayPal shows two.",
@@ -207,14 +274,19 @@
     "take": "ledger",
     "start": 0.6,
     "speed": 1.3,
+    "end": 6.5,
     "focus": {
      "keys": [
       [0, 1, 960, 540],
-      [0.3, 1, 960, 540],
-      [1.3, 1.8, 560, 300],
+      [1.3, 1.8, 560, 300, "out"],
       [2.9, 1.8, 560, 300],
       [4.2, 1.8, 1386, 300]
      ]
+    },
+    "ring": {
+     "at": 4.5,
+     "for": 2.2,
+     "box": [1556, 90, 269, 65]
     }
    },
    "say": "Every decision lands in Maya's book, with the reason in plain words, ready for her accountant.",
