@@ -42,13 +42,16 @@ def shot_rules(page, base):
 
 
 def shot_ledger(page, base):
+    """Maya's book: the one-tap views change the rows and the live totals; the download is the accountant's copy."""
     page.goto(f"{base}/#ledger")
     page.wait_for_selector(".ag-row")
-    time.sleep(1.5)
-    page.fill("#quick", "BLOCK")
-    time.sleep(2.5)
-    page.fill("#quick", "")
-    time.sleep(1)
+    time.sleep(1.2)
+    page.click("#ledgerViews [data-view=held]")
+    time.sleep(1.8)
+    page.click("#ledgerViews [data-view=twice]")
+    time.sleep(2.2)
+    page.hover("#exportCsv")
+    time.sleep(1.4)
 
 
 def shot_results(page, base):

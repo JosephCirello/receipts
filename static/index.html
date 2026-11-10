@@ -97,10 +97,20 @@
   <!-- LEDGER -->
   <section id="tab-ledger" class="tab">
     <div class="ledger-head">
-      <h2>Every money move an agent tried, and what Receipts did</h2>
-      <input id="quick" placeholder="Filter: a model, a vendor, BLOCK, SPLIT…">
+      <h2>Maya's book: every money move an agent tried, and what Receipts did</h2>
+      <div class="ledger-tools">
+        <input id="quick" placeholder="Search: a model, a supplier, an invoice…">
+        <button id="exportCsv" class="ghost" title="Every decision in this view, with its reason, as a spreadsheet">Download for the accountant</button>
+      </div>
     </div>
-    <div class="ledger-sum" id="ledgerSum"></div>
+    <div class="views" id="ledgerViews" role="group" aria-label="Views of the book">
+      <button data-view="all" class="on" aria-pressed="true">Everything</button>
+      <button data-view="held" aria-pressed="false">Held for Maya</button>
+      <button data-view="stopped" aria-pressed="false">Stopped</button>
+      <button data-view="twice" aria-pressed="false">Would have paid twice</button>
+      <button data-view="words" aria-pressed="false">The agent's words</button>
+    </div>
+    <div class="ledger-sum" id="ledgerSum" aria-live="polite"></div>
     <div id="grid" class="ag-theme-quartz grid"></div>
   </section>
 

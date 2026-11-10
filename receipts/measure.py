@@ -177,6 +177,8 @@ def results(results_dir: Path, group: str = "all") -> dict:
     s["group"] = group
     s["groups"] = {k: {"models": len({r["model"] for r in v}), "runs": len(v)} for k, v in groups.items()}
     s["frontier_models"] = sorted({r["model"] for r in groups["frontier"]})
+    # the rows of Maya's book (the Ledger tab): one per money move an agent tried, both arms
+    s["ledger_moves"] = sum(len(r.get("verdicts", [])) for r in rows)
     # the control for "why not just tell the agent?" ran on the open models only (its own folder, never the main file)
     control = [r for r in _pick(results_dir / "promptfix_check_pending") if r["mode"] == "observe"]
     off = [r for r in rows if r["mode"] == "observe"]

@@ -135,11 +135,20 @@ A payment that really did fail (PayPal says FAILED or RETURNED) can be re-sent; 
 
 ![The agent reported three payments; PayPal shows two](media/screenshots/report.png)
 
+**4. Maya's book.** Every money move any agent tried lands in one book, built on **AG Grid**: 2,401 moves from all 19 models, each with what Receipts did and the reason in plain words.
+
+- **One-tap views:** *Everything*, *Held for Maya*, *Stopped*, *Would have paid twice*, *The agent's words*.
+- **A filter under every column**, and a search box across all of them.
+- **Totals that follow what is on screen**, split honestly: with Receipts on, what was held for Maya and what was stopped; with it off, what went through that Receipts would have held or stopped. A pinned row under the grid carries the same totals.
+- **Download for the accountant:** one click gives a spreadsheet of exactly the rows on screen, every reason included. That is the record of every decision the new AI laws ask for, in a form an accountant already uses.
+
+![Maya's book: the "Would have paid twice" view, its totals, a filter under every column, and the download for the accountant](media/screenshots/ledger.png)
+
 **AI writes the rules; code enforces them.** The owner writes her rules in plain English. A language model drafts the exact limits and switches, each shown next to the sentence it came from, and nothing takes effect until she presses *Use these rules*. The model never decides a payment.
 
-| The owner's phone | The rules, in her words | Every decision (AG Grid) |
-|---|---|---|
-| ![Owner declines the second payment and it never reaches PayPal](media/screenshots/owner_s14.png) | ![Plain-English rules drafted into exact settings](media/screenshots/rules.png) | ![The ledger of every money move](media/screenshots/ledger.png) |
+| The owner's phone | The rules, in her words |
+|---|---|
+| ![Owner declines the second payment and it never reaches PayPal](media/screenshots/owner_s14.png) | ![Plain-English rules drafted into exact settings](media/screenshots/rules.png) |
 
 ## A few words used below
 
@@ -174,7 +183,7 @@ flowchart LR
 ## Run it (two minutes, no keys)
 
 ```bash
-git clone <this repo> receipts && cd receipts
+git clone https://github.com/JosephCirello/receipts && cd receipts
 python -m venv .venv && . .venv/bin/activate        # Windows: .venv\Scripts\activate
 pip install -r requirements.txt
 npm install                                          # PayPal's official MCP server, for sandbox mode
@@ -182,7 +191,7 @@ pytest -q                                            # 44 tests, no network
 uvicorn app:app --port 8090
 ```
 
-Open http://localhost:8090. **Live** replays recorded real runs through Receipts and PayPal now (side by side: Receipts off and on), or runs a model live. **Owner** is the phone. **Rules** turns plain English into enforced rules. **Ledger** is every decision (AG Grid). **Results** is the measurement, with cost against harm per model.
+Open http://localhost:8090. **Live** replays recorded real runs through Receipts and PayPal now (side by side: Receipts off and on), or runs a model live. **Owner** is the phone. **Rules** turns plain English into enforced rules. **Ledger** is Maya's book of every decision (AG Grid): one-tap views, live totals, a download for the accountant. **Results** is the measurement, with cost against harm per model.
 
 Three minutes for a judge: pick the day *Crossed in the mail*, press *Run the day*, watch the left side pay twice and the right side hold, then open *Owner* and tap *Decline*.
 

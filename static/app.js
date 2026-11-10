@@ -263,42 +263,92 @@ $("#usePolicy").addEventListener("click", async () => {
   $("#policySaved").textContent = "In force for every run from now on.";
 });
 
-/* ---------- ledger (AG Grid) ---------- */
+/* ---------- ledger (AG Grid): Maya's book of every money move ---------- */
 let GRID = null;
-const chip = (p) => p.value ? `<span class="chip ${p.value}">${p.value}</span>` : "";
+let LEDGER_VIEW = "all";
+const chip = (p) => (p.node && p.node.rowPinned) ? `<b>${esc(p.value)}</b>` : (p.value ? `<span class="chip ${p.value}">${p.value}</span>` : "");
+const codeSet = (r) => new Set(String(r.codes || "").split(",").map((c) => c.trim()).filter(Boolean));
+const TWICE = ["ALREADY_PAID_IN_PAYPAL", "PAYMENT_IN_FLIGHT", "ALREADY_PAID_OUTSIDE_PAYPAL", "NEAR_DUPLICATE_BILL"];
+const WORDS = ["APPROVAL_CLAIMED_NOT_ON_FILE", "CLAIMED_CHECK_NOT_IN_LOG"];
+// one-tap views: AG Grid's external filter, on top of the column filters and the search box
+const VIEWS = {
+  all: () => true,
+  held: (r) => r.decision === "HOLD",
+  stopped: (r) => r.decision === "BLOCK",
+  twice: (r) => TWICE.some((c) => codeSet(r).has(c)),
+  words: (r) => r.said_first || WORDS.some((c) => codeSet(r).has(c)),
+};
+const VIEW_NAME = { all: "everything", held: "held-for-maya", stopped: "stopped", twice: "would-have-paid-twice", words: "agents-words" };
+
+// the totals for exactly what is on screen: the summary strip and a pinned row under the grid
+function ledgerTotals() {
+  // with Receipts ON a HOLD waited for Maya and a BLOCK never left; with it OFF every move went to PayPal,
+  // and HOLD/BLOCK only records what Receipts would have done
+  const t = { n: 0, sent: 0, money: 0, held: 0, heldN: 0, stopped: 0, stoppedN: 0, through: 0, throughN: 0, models: new Set() };
+  GRID.forEachNodeAfterFilter((node) => {
+    const r = node.data; if (!r) return;
+    const on = r.arm === "Receipts ON", amt = r.amount || 0;
+    t.n++; t.money += amt; t.models.add(r.model);
+    if (r.decision === "ALLOW" || !on) t.sent++;
+    if (on && r.decision === "HOLD") { t.held += amt; t.heldN++; }
+    if (on && r.decision === "BLOCK") { t.stopped += amt; t.stoppedN++; }
+    if (!on && r.decision !== "ALLOW") { t.through += amt; t.throughN++; }
+  });
+  $("#ledgerSum").innerHTML = `<div class="s"><b>${t.n.toLocaleString("en-US")}</b>money moves, ${t.models.size} AI model${t.models.size === 1 ? "" : "s"}</div>`
+    + `<div class="s"><b>${t.sent.toLocaleString("en-US")}</b>went to PayPal</div>`
+    + `<div class="s good"><b>${usd(t.held)}</b>held for Maya (${t.heldN})</div>`
+    + `<div class="s good"><b>${usd(t.stopped)}</b>stopped before PayPal (${t.stoppedN})</div>`
+    + `<div class="s bad" title="With Receipts off every move went to PayPal; these are the ones it would have held or stopped"><b>${usd(t.through)}</b>went through with Receipts off (${t.throughN})</div>`;
+  GRID.setGridOption("pinnedBottomRowData", [{ decision: `${t.n.toLocaleString("en-US")} moves`, amount: t.money,
+    why: `With Receipts on: ${usd(t.held)} held for Maya, ${usd(t.stopped)} stopped before PayPal. With it off: ${usd(t.through)} went through that it would have held or stopped.` }]);
+}
+
 async function loadLedger() {
   const rows = await (await fetch("/api/ledger")).json();
-  const n = (f) => rows.filter(f).length;
-  const stopped = rows.filter((r) => r.decision !== "ALLOW" && r.arm === "Receipts ON").reduce((a, r) => a + (r.amount || 0), 0);
-  $("#ledgerSum").innerHTML = `<div class="s"><b>${rows.length}</b>money moves tried</div><div class="s"><b>${n((r) => r.decision === "ALLOW")}</b>cleared</div>`
-    + `<div class="s"><b>${n((r) => r.decision === "HOLD")}</b>held for the owner</div><div class="s"><b>${n((r) => r.decision === "BLOCK")}</b>stopped</div>`
-    + `<div class="s"><b>${usd(stopped)}</b>stopped or held with Receipts on</div>`;
   if (!GRID) {
     GRID = agGrid.createGrid($("#grid"), {
       rowData: rows,
       columnDefs: [
-        { field: "decision", headerName: "Receipts", cellRenderer: chip, width: 120, filter: true, pinned: "left", sort: "desc",
+        { field: "decision", headerName: "Receipts", cellRenderer: chip, width: 130, filter: true, pinned: "left", sort: "desc",
           comparator: (a, b) => ({ BLOCK: 2, HOLD: 1, ALLOW: 0 }[a] ?? -1) - ({ BLOCK: 2, HOLD: 1, ALLOW: 0 }[b] ?? -1) },
-        { field: "arm", width: 130, filter: true },
+        { field: "arm", width: 140, filter: true },
         { field: "model", width: 230, filter: true },
-        { field: "scenario", width: 220, filter: true },
-        { field: "tool", width: 170, filter: true },
-        { field: "amount", width: 120, valueFormatter: (p) => usd(p.value), type: "rightAligned", filter: "agNumberColumnFilter" },
-        { field: "ref", headerName: "Invoice / capture / dispute", width: 210 },
-        { field: "to", headerName: "Payee", width: 240 },
+        { field: "scenario", headerName: "Day", width: 220, filter: true },
+        { field: "tool", width: 160, filter: true },
+        { field: "amount", width: 130, valueFormatter: (p) => usd(p.value), type: "rightAligned", filter: "agNumberColumnFilter" },
+        { field: "ref", headerName: "Invoice / capture / dispute", width: 200, filter: true },
+        { field: "to", headerName: "Payee", width: 240, filter: true },
         { field: "codes", headerName: "Rule", width: 250, filter: true },
         { field: "said_first", headerName: "Said no first", width: 130, cellRenderer: (p) => (p.value ? "⚠ yes" : "") },
-        { field: "why", headerName: "Why (built from PayPal and the records)", flex: 1, minWidth: 380, tooltipField: "why" },
+        { field: "why", headerName: "Why (built from PayPal and the records)", flex: 1, minWidth: 380, tooltipField: "why", filter: true },
         { field: "paypal_id", headerName: "PayPal id", width: 170 },
-        { field: "backend", headerName: "PayPal", width: 100 },
+        { field: "backend", headerName: "PayPal", width: 110, filter: true },
       ],
-      defaultColDef: { sortable: true, resizable: true },
+      defaultColDef: { sortable: true, resizable: true, floatingFilter: true, suppressHeaderMenuButton: true },
       animateRows: true,
       pagination: true, paginationPageSize: 50,
+      tooltipShowDelay: 300,
+      isExternalFilterPresent: () => LEDGER_VIEW !== "all",
+      doesExternalFilterPass: (node) => VIEWS[LEDGER_VIEW](node.data),
+      onFilterChanged: ledgerTotals,
+      onRowDataUpdated: ledgerTotals,
+      getRowClass: (p) => (p.node.rowPinned ? "r-total" : ""),
       rowClassRules: { "row-live": (p) => p.data && p.data.live, "r-BLOCK": (p) => p.data && p.data.decision === "BLOCK",
                        "r-HOLD": (p) => p.data && p.data.decision === "HOLD", "r-ALLOW": (p) => p.data && p.data.decision === "ALLOW" },
     });
     $("#quick").addEventListener("input", (e) => GRID.setGridOption("quickFilterText", e.target.value));
+    $("#ledgerViews").querySelectorAll("button").forEach((b) => b.addEventListener("click", () => {
+      LEDGER_VIEW = b.dataset.view;
+      $("#ledgerViews").querySelectorAll("button").forEach((x) => { x.classList.toggle("on", x === b); x.setAttribute("aria-pressed", x === b); });
+      GRID.onFilterChanged();
+    }));
+    // a spreadsheet of exactly what is on screen (views, column filters and search applied), every reason included
+    $("#exportCsv").addEventListener("click", () => GRID.exportDataAsCsv({
+      fileName: `receipts_${VIEW_NAME[LEDGER_VIEW]}_${new Date().toISOString().slice(0, 10)}.csv`,
+      skipPinnedBottom: true,
+      processCellCallback: (p) => (p.column.getColId() === "said_first" ? (p.value ? "yes" : "") : p.value),
+    }));
+    ledgerTotals();
   } else GRID.setGridOption("rowData", rows);
 }
 

@@ -324,11 +324,14 @@ def _ledger_from(rec: dict, live: bool = False):
 
 
 @app.get("/api/ledger")
-def ledger(limit: int = 3000):
+def ledger(limit: int = 6000):
+    """Every money move: live runs first, then the measured runs of all 19 models, read through the same
+    loader as the results (receipts/measure.py), so an errored run never appears and the frontier runs do."""
+    from receipts import measure
     rows = list(LIVE_LEDGER)
-    for r in _episodes():
+    for r in measure.load_groups(RESULTS)["all"]:
         rows.extend(_ledger_from(r))
-    return rows[-limit:]
+    return rows[:limit]
 
 
 @app.get("/api/results")
