@@ -181,7 +181,8 @@ flowchart LR
 
 - **PayPal integration.** In sandbox mode the agent's PayPal tools go through **PayPal's official MCP server** (`@paypal/mcp`, run locally): `list_transactions`, `get_order`, `create_refund`, `get_dispute`, `accept_dispute_claim`, `get_shipment_tracking`. Supplier payments use the **Payouts API** (the MCP server has no payouts tool). Receipts reads payout status, captures, refunds and tracking straight from PayPal's REST API. A non-sandbox PayPal URL is refused.
 - **Stand-in mode.** With no PayPal credentials, a stand-in with the same tool names and documented response shapes runs everything in memory, so anyone can try it. Its `list_transactions` behaves like the real tool, status filter default and all. Every record says which backend produced it.
-- **Receipts is itself an MCP server.** Point any MCP client at `http://localhost:8090/mcp/` instead of at PayPal's MCP server: the same PayPal tool names plus the payments book, every money move checked first, holds on the owner's phone.
+- **Receipts is itself an MCP server.** Point any MCP client at `http://localhost:8090/mcp/` instead of at PayPal's MCP server: the same PayPal tool names plus the payments book, every money move checked first, holds on the owner's phone. The MCP workspace is one workspace shared by every MCP client, so on a public server its holds stay off the web phone (`RECEIPTS_MCP_ON_PHONE=0`, set in the Docker image); the `receipts_holds` tool lists them either way.
+- **Every visitor has their own state.** The web app keeps held payments, runs, rules and the reset per visitor, under a random id in a cookie, so one visitor of the hosted demo never sees or changes another's. The recorded runs and Maya's book are read-only and shared.
 
 ## Run it (two minutes, no keys)
 

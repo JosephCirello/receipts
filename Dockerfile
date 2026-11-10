@@ -18,6 +18,8 @@ COPY examples ./examples
 COPY app.py run_batch.py regrade.py sandbox_check.py ./
 
 # Live model runs are off on a public demo by default (recorded real runs replay through Receipts now).
-ENV RECEIPTS_LIVE=0 PAYPAL_MODE=auto PORT=8090
+# The MCP workspace is shared by every MCP client, so on a public server its holds stay off the web phone
+# (each visitor sees only their own); run with -e RECEIPTS_MCP_ON_PHONE=1 on your own machine to show them.
+ENV RECEIPTS_LIVE=0 PAYPAL_MODE=auto PORT=8090 RECEIPTS_MCP_ON_PHONE=0
 EXPOSE 8090
 CMD ["sh", "-c", "uvicorn app:app --host 0.0.0.0 --port ${PORT}"]

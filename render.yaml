@@ -15,3 +15,5 @@ services:
         value: "0"            # recorded real runs only; no model key on the public demo
       - key: PAYPAL_MODE
         value: standin
+      - key: RECEIPTS_MCP_ON_PHONE
+        value: "0"            # each visitor sees only their own held payments; the shared MCP workspace stays off the phone
