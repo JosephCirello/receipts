@@ -196,7 +196,7 @@ def render_slides(base):
         pg = br.new_page(viewport={"width": W, "height": H})
         # every card the script uses, plus the stills for the README and Devpost gallery
         plan = json.loads((HERE / "script.json").read_text(encoding="utf-8"))
-        ids = [s["visual"]["slide"] for s in plan["scenes"] if "slide" in s["visual"]]
+        ids = [v["slide"] for s in plan["scenes"] for v in (s["visual"], s["visual"].get("then") or {}) if "slide" in v]
         for sid in ids + [x for x in ("pain", "finding", "advice", "results", "cover") if x not in ids]:
             pg.goto((HERE / "slides.html").as_uri() + "#" + sid)
             pg.wait_for_timeout(900)

@@ -120,15 +120,7 @@
     "slide": "finding1",
     "then": {
      "at": 6.95,
-     "take": "results",
-     "start": 1.9,
-     "speed": 1,
-     "focus": {
-      "keys": [
-       [0, 1.48, 742, 450]
-      ]
-     },
-     "caption": "$70,000 of every $1 million paid. 100x PayPal's own loss rate."
+     "slide": "finding1b"
     }
    },
    "caption": "",
