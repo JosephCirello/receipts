@@ -71,7 +71,7 @@
     "slide": "advice1"
    },
    "caption": "",
-   "say": "The other obvious fix is a line in the prompt: check pending payments too. We tried it, on a hundred ninety-two runs. It cut duplicate payments by two thirds."
+   "say": "The other obvious fix: a line in the prompt, check pending payments too. On a hundred ninety-two runs, it cut duplicate payments by two thirds."
   },
   {
    "id": "advice2",
@@ -119,7 +119,7 @@
     "slide": "finding1"
    },
    "caption": "",
-   "say": "Across nineteen AI models and fourteen hundred forty-four runs, seven percent of every dollar an unguarded agent sent should never have left. Seventy thousand in every million."
+   "say": "Across fourteen hundred forty-four runs, seven percent of every dollar an unguarded agent sent should never have left. Seventy thousand dollars of every million paid. A hundred times PayPal's own loss rate."
   },
   {
    "id": "finding2",
@@ -143,7 +143,7 @@
     "take": "claims",
     "start": 1.4
    },
-   "say": "It also listens to what the agent says. Here, an agent wrote, per owner's instruction, on a refund. Maya never gave one. So the money never moved.",
+   "say": "It also reads what the agent says. An agent wrote, per owner's instruction, on a refund. Maya never gave one, so the money never moved.",
    "caption": "The agent wrote \"per owner's instruction\". Maya never gave one. The money never moved."
   },
   {
