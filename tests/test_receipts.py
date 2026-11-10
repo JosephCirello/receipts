@@ -399,3 +399,13 @@ def test_receipts_reads_the_same_payouts_the_agent_sees():
 def test_report_reader_keeps_an_invoice_suffix():
     r, _ = make("S18_same_bill_new_number", mode="observe")
     assert r._ids_in(["INV-CH-2295R", "INV-CH-2295 - Copperline"]) == {"INV-CH-2295R", "INV-CH-2295"}
+
+
+def test_rule_drafter_reaches_the_provider_code_not_an_import_error(monkeypatch):
+    """With no key the drafter must fall back for that reason, not because its own import broke
+    (it imported a removed agent._client from 2026-11-09 09:06 until that night, and every draft fell back)."""
+    from receipts import compiler, providers
+    monkeypatch.setattr(providers, "key_for", lambda provider: None)
+    out = compiler.ai_compile("Supplier payments over $5,000 need my approval.")
+    assert out["compiled_by"] == "regex (offline fallback)"
+    assert "RuntimeError" in out["note"], out["note"]

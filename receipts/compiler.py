@@ -82,8 +82,15 @@ def regex_compile(text: str) -> dict:
 def ai_compile(text: str, model: str | None = None) -> dict:
     model = model or os.environ.get("RECEIPTS_COMPILER_MODEL", "glm-5.3")
     try:
-        from .agent import _client
-        client = _client()
+        # the client comes from the same provider table as the agents (the old agent._client was removed
+        # when providers.py arrived on 2026-11-09, and this import failed silently into the offline reader)
+        from openai import OpenAI
+        from . import providers
+        provider = providers.provider_for(model)
+        key = providers.key_for(provider)
+        if not key:
+            raise RuntimeError(f"no key for {provider}")
+        client = OpenAI(api_key=key, base_url=providers.PROVIDERS[provider]["base_url"], timeout=120, max_retries=2)
         fields = "\n".join(f'- "{k}" ({kind}): {desc}' for k, (kind, desc) in FIELDS.items())
         msg = PROMPT.format(fields=fields, defaults=json.dumps(DEFAULT_POLICY), text=text[:6000])
         r = client.chat.completions.create(model=model, temperature=0, messages=[{"role": "user", "content": msg}],

@@ -132,7 +132,8 @@
   {
    "id": "rules",
    "visual": {
-    "take": "rules"
+    "take": "rules",
+    "start": 0.8
    },
    "say": "Maya writes her rules the way she'd tell a new hire: never pay a bill twice; call before you change where a supplier gets paid. Receipts enforces them, and shows her what it understood.",
    "caption": "Maya writes her rules in plain English. Receipts enforces them, and shows her what it understood."
