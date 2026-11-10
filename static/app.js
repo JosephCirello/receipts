@@ -15,7 +15,8 @@ function showTab(t) {
   if (t === "results") loadResults();
   if (t === "rules") loadPolicy();
   if (t === "owner") pollHolds();
-  history.replaceState(null, "", "#" + t);
+  history.replaceState(null, "", location.search + "#" + t);
+  window.scrollTo(0, 0);                       // a new tab opens at its top, not at the last tab's scroll position
 }
 
 /* ---------- boot ---------- */

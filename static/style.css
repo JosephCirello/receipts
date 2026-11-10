@@ -226,6 +226,31 @@ textarea { width: 100%; height: 360px; resize: vertical; padding: 14px; border-r
 .views button.on { background: var(--ink); color: var(--paper); border-color: var(--ink); }
 @media (max-width: 900px) { .ledger-head { flex-direction: column; align-items: stretch; } .ledger-tools { flex-wrap: wrap; } .ledger-tools input { width: 100%; } }
 
+/* Dark mode: the AG Grid tables follow the page (quartz's own variables, set from the page's colours).
+   Light mode, the one the video shows, is left exactly as AG Grid draws it. */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .ag-theme-quartz {
+    color-scheme: dark;
+    --ag-background-color: var(--card); --ag-foreground-color: var(--ink); --ag-data-color: var(--ink);
+    --ag-secondary-foreground-color: var(--muted); --ag-header-background-color: var(--paper);
+    --ag-header-foreground-color: var(--ink-2); --ag-odd-row-background-color: var(--card);
+    --ag-row-hover-color: #1e2840; --ag-selected-row-background-color: #22304a;
+    --ag-border-color: var(--line); --ag-row-border-color: var(--line); --ag-header-column-resize-handle-color: var(--line);
+    --ag-input-border-color: #3a4560; --ag-control-panel-background-color: var(--paper);
+    --ag-subheader-background-color: var(--paper); --ag-modal-overlay-background-color: rgba(16, 21, 31, .66);
+  }
+}
+:root[data-theme="dark"] .ag-theme-quartz {
+  color-scheme: dark;
+  --ag-background-color: var(--card); --ag-foreground-color: var(--ink); --ag-data-color: var(--ink);
+  --ag-secondary-foreground-color: var(--muted); --ag-header-background-color: var(--paper);
+  --ag-header-foreground-color: var(--ink-2); --ag-odd-row-background-color: var(--card);
+  --ag-row-hover-color: #1e2840; --ag-selected-row-background-color: #22304a;
+  --ag-border-color: var(--line); --ag-row-border-color: var(--line); --ag-header-column-resize-handle-color: var(--line);
+  --ag-input-border-color: #3a4560; --ag-control-panel-background-color: var(--paper);
+  --ag-subheader-background-color: var(--paper); --ag-modal-overlay-background-color: rgba(16, 21, 31, .66);
+}
+
 /* ---- results: hero, cost-against-harm chart ---- */
 :root { --viz-1: #2a78d6; --viz-2: #eb6834; --viz-grid: #e1e0d9; --viz-axis: #c3c2b7; --viz-muted: #898781; }
 @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --viz-1: #3987e5; --viz-2: #d95926; --viz-grid: #2c2c2a; --viz-axis: #383835; --viz-muted: #898781; } }
