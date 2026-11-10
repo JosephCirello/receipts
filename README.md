@@ -4,7 +4,7 @@
 
 Maya runs a nine-person furniture workshop. On Monday afternoon she pays a supplier $1,836 through PayPal. On Tuesday morning the supplier's billing system sends the letter every owner knows: **SECOND NOTICE, past due.** Her payment and their reminder crossed in the mail.
 
-Maya's AI agent pays her bills now. It does the careful thing and checks PayPal first. But PayPal shows it only the payments that have finished going through, and hers is still on its way. So it finds nothing, and pays the bill again.
+Maya's AI agent pays her bills now. It does the careful thing and checks PayPal first. But by default PayPal's tool lists only the payments that have finished going through, and hers is still on its way. So it finds nothing, and pays the bill again.
 
 **Receipts stops that.** It sits between the AI and PayPal, and:
 
@@ -43,7 +43,7 @@ We ran Maya's Tuesday 38 times, across 19 AI models (two runs each), with nothin
 
 That is not a hacker. It is a reminder email.
 
-Small businesses are handing their payments to AI agents. PayPal's open-source MCP server exposes 28 tools, among them `create_refund`, `accept_dispute_claim`, `pay_order`, `cancel_subscription` and `send_invoice` (read from the running server). None of them has an approval step, a limit or a second look. That is fine for a demo and dangerous for a business.
+Small businesses are handing their payments to AI agents. PayPal's open-source MCP server gives an agent 28 tools, among them `create_refund`, `accept_dispute_claim`, `pay_order`, `cancel_subscription` and `send_invoice` (read from the running server). The tools do what they are told, as payment tools should. Checking whether a payment should be made at all is left to whoever builds the agent. That is the gap Receipts fills.
 
 ## What we measured
 
@@ -83,15 +83,15 @@ A prompt is advice the agent may or may not follow, and the owner cannot audit i
 
 ## Why it matters beyond Maya
 
-An agent that buys things is the exciting demo. An agent that pays a business's bills and refunds its customers, with nobody checking, is what small businesses are actually switching on, and the losses land on them. Every figure below was read at the named source on 2026-11-09.
+An agent that buys things is the exciting demo. An agent that pays a business's bills and refunds its customers, with nobody checking, is what small businesses are actually switching on, and the losses land on them. Every figure below was read at the named source on 2026-11-09, unless a later date is given.
 
 **The money is already leaking, with people doing the paying.**
 
 - Duplicate payments run **1% to 2% of what companies disburse** (industry benchmarks cited by Oversight, HighRadius, FISCAL and NetSuite from APQC and IOFM).
 - **76%** of US organisations were hit by payments fraud in the past year and **74%** by business email compromise (AFP 2026 Payments Fraud and Control Survey); **57%** saw vendor impersonation (AFP 2025).
 - **43.8%** of chargebacks are friendly fraud and **27.1%** of returns are judged abusive (Chargebacks911, 2026 Chargeback Field Report).
-- PayPal's own transaction losses were **0.07% of $1.79 trillion** in volume, up **$223 million (20%)** "mainly due to fraud" (as cited from PayPal's FY2025 report by Chargeback.io).
-- Hand that payment desk to an agent that reads the email and not the ledger, and in our test the leak became **7.0%: $70,000 of every $1 million paid, about 100x PayPal's own loss rate**, across 19 AI models. **Paying 35x more for the model didn't fix it.** If one dollar in a thousand of PayPal's $1.79 trillion flowed through agents this unguarded, that would be **$125 million a year** (a what-if, from our test rate; our days hold more traps than a real month).
+- PayPal's own transaction losses were **0.07% of $1.79 trillion** in volume in 2025, up **$223 million (20%)**, "primarily due to an increase in losses driven by fraud incidents" ([PayPal Holdings, Form 10-K for fiscal year 2025](https://www.sec.gov/Archives/edgar/data/1633917/000163391726000024/pypl-20251231.htm), Item 7, "Transaction and credit losses"; read 2026-11-10).
+- Hand that payment desk to an agent that reads the email and not the ledger, and in our test the leak became **7.0%: $70,000 of every $1 million paid, about 100x PayPal's own loss rate**, across 19 AI models. **Paying 35x more for the model didn't fix it.** (Our days hold more traps than a real month, so the 7.0% is about this test.)
 
 **The people who run payments say trust is the blocker.**
 
