@@ -175,6 +175,27 @@ def test_the_shared_mcp_workspace_reaches_the_phone_only_where_that_is_switched_
         r.holds[:] = before
 
 
+def test_all_nineteen_models_are_in_the_menu_and_a_frontier_run_replays(clients, web):
+    a, _ = clients
+    meta = a.get("/api/meta").json()
+    assert len(meta["models"]) == 12 and len(meta["frontier_models"]) == 7
+    # the open models' runs keep the line numbers they always had; the frontier runs are numbered clear of them
+    opens = a.get("/api/recorded", params={"scenario": DAY, "model": MODEL}).json()
+    assert len(opens) == 4 and all(r["line"] < web.FRONTIER_LINE0 for r in opens)
+    for model in meta["frontier_models"]:
+        rows = a.get("/api/recorded", params={"scenario": DAY, "model": model}).json()
+        assert sorted((r["mode"], r["rep"]) for r in rows) == [("enforce", 0), ("enforce", 1), ("observe", 0), ("observe", 1)], model
+        assert all(r["line"] >= web.FRONTIER_LINE0 for r in rows)
+    # replay a frontier run that paid Maya twice with nothing checking it: the replay reaches the same verdict now
+    paid_twice = [r for m in meta["frontier_models"] for r in a.get("/api/recorded", params={"scenario": DAY, "model": m}).json()
+                  if r["mode"] == "observe" and r["attempts"]]
+    assert paid_twice
+    res = a.get("/api/replay", params={"line": paid_twice[0]["line"], "speed": 100})
+    assert res.status_code == 200 and "PAYMENT_IN_FLIGHT" in res.text and '"bad_money": 1836.0' in res.text
+    assert f'"model": "{paid_twice[0]["model"]}"' in res.text
+    assert a.get("/api/replay", params={"line": web.FRONTIER_LINE0 + 10**6}).status_code == 404
+
+
 def test_the_book_and_the_results_are_shared_and_unchanged_in_shape(clients):
     a, b = clients
     rows = a.get("/api/ledger", params={"limit": 5}).json()

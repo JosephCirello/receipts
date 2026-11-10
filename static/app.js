@@ -24,7 +24,12 @@ async function boot() {
   const m = await (await fetch("/api/meta")).json();
   Object.assign(META, m);
   $("#scn").innerHTML = m.scenarios.map((s) => `<option value="${s.id}">${esc(s.title)}${s.kind === "control" ? "" : ""}</option>`).join("");
-  $("#model").innerHTML = m.models.map((x) => `<option>${esc(x)}</option>`).join("");
+  // every measured model can be replayed: the twelve open ones, then the seven frontier ones, under their own headings
+  const opt = (x) => `<option>${esc(x)}</option>`;
+  const fr = m.frontier_models || [];
+  $("#model").innerHTML = fr.length
+    ? `<optgroup label="Open models (${m.models.length})">${m.models.map(opt).join("")}</optgroup><optgroup label="Frontier models (${fr.length})">${fr.map(opt).join("")}</optgroup>`
+    : m.models.map(opt).join("");
   $("#env").textContent = m.paypal_mode === "sandbox" ? "PayPal sandbox · live" : "PayPal stand-in (no keys)";
   $("#env").title = m.paypal_mode === "sandbox" ? "Every allowed money move goes to PayPal's sandbox now."
     : "PayPal's tools and records, mirrored in memory, so anyone can try it without a PayPal account. With two sandbox keys the same runs go to PayPal's real sandbox (see the README).";
@@ -291,9 +296,18 @@ async function loadPolicy() {
   $("#english").value = p.english;
   DRAFT = p; drawRules();
 }
+// who drafted the settings, in plain words (the API keeps its own value; "regex (offline fallback)" is the built-in reader)
+function drafter(by) {
+  if (!by) return "";
+  if (/^regex/i.test(by)) return "Drafted by: the built-in reader (" + (META.live_allowed === false
+    ? "AI drafting is switched off on this public demo" : "no AI model key on this copy, so AI drafting is off") + ")";
+  if (by === "defaults") return "The rules Receipts starts with";
+  if (by === "owner") return "Set by the owner";
+  return "Drafted by: " + by;
+}
 function drawRules() {
   const p = DRAFT;
-  $("#compiledBy").textContent = p.compiled_by ? "Drafted by: " + p.compiled_by : "";
+  $("#compiledBy").textContent = drafter(p.compiled_by);
   $("#ruleList").innerHTML = Object.entries(p.fields).map(([k, f]) => {
     const v = p.policy[k];
     const input = f.kind === "number" ? `<input type="number" data-k="${k}" value="${v}" min="0" step="1">` : `<input type="checkbox" data-k="${k}" ${v ? "checked" : ""}>`;
@@ -362,9 +376,9 @@ function ledgerTotals() {
     + `<div class="s"><b>${t.sent.toLocaleString("en-US")}</b>went to PayPal</div>`
     + `<div class="s good"><b>${usd(t.held)}</b>held for Maya (${t.heldN})</div>`
     + `<div class="s good"><b>${usd(t.stopped)}</b>stopped before PayPal (${t.stoppedN})</div>`
-    + `<div class="s bad" title="With Receipts off every move went to PayPal; these are the ones it would have held or stopped"><b>${usd(t.through)}</b>went through with Receipts off (${t.throughN})</div>`;
+    + `<div class="s bad" title="With Receipts off nothing was checked. This adds up every move Receipts would have held or stopped, each at its full amount. It is more than the harm figure on the Results tab, which counts only money that wrongly left: for a split bill, only the part over the owner's limit, and nothing for a refund PayPal itself refused."><b>${usd(t.through)}</b>with Receipts off: moves it would have held or stopped (${t.throughN})</div>`;
   GRID.setGridOption("pinnedBottomRowData", [{ decision: `${t.n.toLocaleString("en-US")} moves`, amount: t.money,
-    why: `With Receipts on: ${usd(t.held)} held for Maya, ${usd(t.stopped)} stopped before PayPal. With it off: ${usd(t.through)} went through that it would have held or stopped.` }]);
+    why: `With Receipts on: ${usd(t.held)} held for Maya, ${usd(t.stopped)} stopped before PayPal. With it off: ${usd(t.through)} in moves it would have held or stopped, each at its full amount.` }]);
 }
 
 async function loadLedger() {
@@ -422,6 +436,7 @@ async function loadLedger() {
 /* ---------- results ---------- */
 let MGRID = null, DGRID = null;
 const money0 = (x) => "$" + Math.round(x || 0).toLocaleString("en-US");
+const num = (x) => Number(x || 0).toLocaleString("en-US");          // 1,444 not 1444
 const DAY_TITLE = {};
 const GROUP_LABEL = { all: "All models", open: "Open models", frontier: "Frontier models" };
 const GROUP_WHO = { all: "", open: "open-model ", frontier: "frontier-model " };
@@ -440,18 +455,18 @@ async function loadResults(group = RES_GROUP) {
     `<button data-group="${k}" class="${k === s.group ? "on" : ""}" aria-pressed="${k === s.group}">${GROUP_LABEL[k]} <span class="muted">${g.models}</span></button>`).join("");
   body.innerHTML = `
     <div class="seg" role="group" aria-label="Which models">${seg}</div>
-    <div class="res-h"><h2>Measured: ${s.models} models · ${s.days} business days · ${s.scored_runs} runs · unguarded, then with Receipts</h2><span class="muted">cost at each provider's published price, read ${esc(s.prices_read_on)}</span></div>
+    <div class="res-h"><h2>Measured: ${s.models} models · ${s.days} business days · ${num(s.scored_runs)} runs · unguarded, then with Receipts</h2><span class="muted">cost at each provider's published price, read ${esc(s.prices_read_on)}</span></div>
     <div class="hero-pct"><div class="pct">${Number(o.harm_share_pct).toFixed(1)}%</div><div class="what">of every dollar an <b>unguarded</b> ${GROUP_WHO[s.group] || ""}AI agent sent <b>should never have left the business.</b><small>${money0(o.harm_money)} of ${money0(o.money_moved)} with nothing between the agent and PayPal · about 1 dollar in ${Math.round(o.one_dollar_in || 0)} · ${sn.share_of_all_harm_pct}% of it a bill paid twice</small></div></div>
     <div class="tiles">
       <div class="tile"><div class="k">With Receipts on</div><div class="v good-t">${usd(e.harm_money)}</div><div class="s">left wrongly on the same ${e.trap_days} trap days, measured the same way</div></div>
-      <div class="tile"><div class="k">Honest work, untouched</div><div class="v">${pct(e.legit_done, e.legit_expected)}</div><div class="s">${e.legit_done} of ${e.legit_expected} honest payments and refunds went straight to PayPal; ${e.false_stops} wrongly stopped</div></div>
+      <div class="tile"><div class="k">Honest work, untouched</div><div class="v">${pct(e.legit_done, e.legit_expected)}</div><div class="s">${num(e.legit_done)} of ${num(e.legit_expected)} honest payments and refunds went straight to PayPal; ${e.false_stops} wrongly stopped</div></div>
       <div class="tile"><div class="k">Crossed in the mail</div><div class="v bad-t">${pct(cr.paid_twice, cr.runs)}</div><div class="s">of runs paid Maya twice (${cr.paid_twice} of ${cr.runs}); ${pct(cr.paid_twice_after_checking_paypal, cr.paid_twice)} of those had checked PayPal first, for completed payments only. Every run that asked for pending found hers.</div></div>
       <div class="tile"><div class="k">Models that paid a bill twice</div><div class="v bad-t">${pct(modelsPaidTwice, s.models)}</div><div class="s">${modelsPaidTwice} of ${s.models} models, at least once across the ${sn.days} second-notice days, Receipts off</div></div>
       <div class="tile"><div class="k">Report vs PayPal</div><div class="v">${o.report_mismatch + e.report_mismatch}</div><div class="s">end-of-day reports claiming money that never moved</div></div>
       <div class="tile"><div class="k">Judge model</div><div class="v">None</div><div class="s">verdicts are plain rules on the call, the records and PayPal; harm is a fixed definition per day, written apart from the rules</div></div>
     </div>
     <div class="card viz-card">
-      <h3>Does a dearer model lose less? What each model cost for the ${s.days} days, against what it lost, unguarded</h3>
+      <h3>Does a pricier model lose less? What each model cost for the ${s.days} days, against what it lost, unguarded</h3>
       ${FR.size && s.group === "all" ? `<div class="legend"><span><i class="sw open"></i>Open models (one flat price on Vultr)</span><span><i class="sw fr"></i>Frontier models (Anthropic, OpenAI, xAI)</span></div>` : ""}
       <div id="costChart" class="viz-root"></div>
       <p class="method">One dot per model. Across: what the business paid the model to work the ${s.days} days, at the provider's published price (log scale). Up: money that left wrongly. The dashed line is the same ${s.days} days with Receipts on: $0.00 for every model. Hover a dot for the detail; the table below has every number.</p>
@@ -510,7 +525,7 @@ function promptFixHtml(pf) {
   const b = pf.before, a = pf.after;
   const rows = Object.entries(pf.by_day).map(([d, v]) => `<tr><td>${esc(DAY_TITLE[d] || d)}</td><td>${v.before.fell} / ${v.before.runs}</td><td>${v.after.fell} / ${v.after.runs}</td><td>${usd(v.before.harm_money)}</td><td>${usd(v.after.harm_money)}</td><td>${v.before.legit_done} / ${v.before.legit_expected}</td><td>${v.after.legit_done} / ${v.after.legit_expected}</td></tr>`).join("");
   return `<div class="card viz-card"><h3>Why not just tell the agent? We tried. One extra line in the owner's rules, same days, Receipts off.</h3>
-    <p class="method">The line: <q>${esc(pf.line || "")}</q>. ${pf.models} models, ${pf.runs} runs. It cut duplicate payments by <b>${b.fell ? Math.round(100 * (b.fell - a.fell) / b.fell) : 0}%</b>: <b>${pct1(b.fell, b.runs)}</b> of runs paid a bill twice before (${b.fell} of ${b.runs}), <b>${pct1(a.fell, a.runs)}</b> after (${a.fell} of ${a.runs}); with Receipts on the same days, <b>0%</b>. Money sent wrongly: ${usd(b.harm_money)} before, ${usd(a.harm_money)} after. Models the line fixed: ${pf.models_fixed.length ? pf.models_fixed.map(esc).join(", ") : "none"}. Still paying twice: ${pf.models_still_paying_twice.length ? pf.models_still_paying_twice.map(esc).join(", ") : "none"}.</p>
+    <p class="method">The line: <q>${esc((pf.line || "").replace(/\.\s*$/, ""))}</q>. ${pf.models} models, ${num(pf.runs)} runs. It cut duplicate payments by <b>${b.fell ? Math.round(100 * (b.fell - a.fell) / b.fell) : 0}%</b>: <b>${pct1(b.fell, b.runs)}</b> of runs paid a bill twice before (${b.fell} of ${b.runs}), <b>${pct1(a.fell, a.runs)}</b> after (${a.fell} of ${a.runs}); with Receipts on the same days, <b>0%</b>. Money sent wrongly: ${usd(b.harm_money)} before, ${usd(a.harm_money)} after. Models the line fixed: ${pf.models_fixed.length ? pf.models_fixed.map(esc).join(", ") : "none"}. Still paying twice: ${pf.models_still_paying_twice.length ? pf.models_still_paying_twice.map(esc).join(", ") : "none"}.</p>
     <table class="plain"><thead><tr><th>Day</th><th>Fell before</th><th>Fell after</th><th>Sent wrongly before</th><th>after</th><th>Honest work before</th><th>after</th></tr></thead><tbody>${rows}</tbody></table>
     <p class="method">A prompt is advice the agent may or may not follow, and the owner cannot audit it; Receipts enforces the same check in code, whatever the agent was told.</p></div>`;
 }
@@ -534,7 +549,7 @@ function drawCostChart(el, rows, days) {
   g += `<line class="zero" x1="${L}" x2="${W - R}" y1="${Y(0) - 1.5}" y2="${Y(0) - 1.5}"/><text class="zero-l" x="${L + 8}" y="${Y(0) - 10}" text-anchor="start">With Receipts on: $0.00 for every model</text>`;
   g += `<text class="axis-l" x="${L + (W - L - R) / 2}" y="${H - 10}" text-anchor="middle">What the model cost for the ${days} days (log scale)</text>`;
   g += `<text class="axis-l" transform="translate(16 ${T + (H - T - B) / 2}) rotate(-90)" text-anchor="middle">Money that left wrongly, unguarded</text>`;
-  // labelled: the three that lost most, the dearest model, and the dearest model that still lost money
+  // labeled: the three that lost most, the priciest model, and the priciest model that still lost money
   const dear = [...pts].sort((a, b) => b.cost_per_agent_run_usd - a.cost_per_agent_run_usd);
   const labelled = [...pts].sort((a, b) => b.harm_money - a.harm_money).slice(0, 3).concat(
     dear.slice(0, 1), dear.filter((p) => p.harm_money > 0).slice(0, 1));

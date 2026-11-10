@@ -40,7 +40,7 @@ from receipts.core import Receipts
 from receipts.paypal import make_paypal
 from receipts.rules import DEFAULT_POLICY
 from receipts.scenarios import load
-from run_batch import MODELS
+from run_batch import FRONTIER, MODELS
 
 ROOT = Path(__file__).resolve().parent
 RESULTS = Path(os.environ.get("RECEIPTS_RESULTS", str(ROOT / "results")))
@@ -187,7 +187,10 @@ def _resolved_paypal() -> str:
 
 @app.get("/api/meta")
 def meta():
-    return {"business": BIZ, "models": MODELS, "live_allowed": LIVE_ALLOWED,
+    # "models" stays the twelve open models; the seven frontier models are listed beside them when their recorded runs
+    # are on disk. A file check only: this is the hosted demo's health check and must never wait on parsing the runs.
+    frontier = FRONTIER if any((RESULTS / "frontier" / n).exists() for n in ("episodes_scored.jsonl", "episodes.jsonl")) else []
+    return {"business": BIZ, "models": MODELS, "frontier_models": frontier, "live_allowed": LIVE_ALLOWED,
             "paypal_mode": _resolved_paypal(),
             "scenarios": [{"id": s["id"], "title": s["title"], "kind": s["kind"], "pressure": s["pressure"]} for s in SCENARIOS]}
 
@@ -311,17 +314,36 @@ def _parse_episodes(p: Path) -> list[dict]:
     return out
 
 
+# The seven frontier models' runs live in their own folder (results/frontier). They are replayed from the rows the
+# Results tab and the book already hold in memory (measure.load_scored: the latest finished run per model, day, arm
+# and run number), so no second copy is parsed. Their replay numbers start here, clear of the open models' line numbers.
+FRONTIER_LINE0 = 1_000_000
+
+
+def _frontier_episodes() -> list[dict]:
+    from receipts import measure
+    return measure._pick(RESULTS / "frontier")
+
+
+def _recorded_run(line: int) -> dict | None:
+    if line >= FRONTIER_LINE0:
+        rows = _frontier_episodes()
+        return rows[line - FRONTIER_LINE0] if line - FRONTIER_LINE0 < len(rows) else None
+    return next((r for r in _episodes() if r["_line"] == line), None)
+
+
 @app.get("/api/recorded")
 def recorded(scenario: str | None = None, model: str | None = None):
     rows = []
-    for r in _episodes():
+    numbered = [(r["_line"], r) for r in _episodes()] + [(FRONTIER_LINE0 + i, r) for i, r in enumerate(_frontier_episodes())]
+    for line, r in numbered:
         if r["outcome"].get("class") in ("ERROR", "NO_TOOL_CALLS"):
             continue
         if scenario and r["scenario"] != scenario:
             continue
         if model and r["model"] != model:
             continue
-        rows.append({"line": r["_line"], "scenario": r["scenario"], "model": r["model"], "mode": r["mode"], "rep": r["rep"],
+        rows.append({"line": line, "scenario": r["scenario"], "model": r["model"], "mode": r["mode"], "rep": r["rep"],
                      "ts": r.get("ts"), "class": r["outcome"]["class"], "attempts": r["outcome"].get("trap_attempts"),
                      "money_at_risk": r["outcome"].get("money_at_risk"), "report": r["outcome"].get("report"),
                      "said_no_did_it": r["outcome"].get("said_no_did_it")})
@@ -332,10 +354,9 @@ def recorded(scenario: str | None = None, model: str | None = None):
 def replay(request: Request, line: int, speed: float = 1.0, mode: str | None = None):
     """Re-drive a recorded run: the model's words and tool calls are the recorded ones;
     Receipts and PayPal run NOW. Labelled as a replay everywhere it is shown."""
-    eps = {r["_line"]: r for r in _episodes()}
-    if line not in eps:
+    rec = _recorded_run(line)
+    if rec is None or rec["outcome"].get("class") in ("ERROR", "NO_TOOL_CALLS"):
         raise HTTPException(404, "no such recorded run")
-    rec = eps[line]
     scn = BY_ID[rec["scenario"]]
     visitor = _visitor(request, create=True)
     policy = dict(visitor.rules["policy"])          # this visitor's rules as they stand when the run starts
