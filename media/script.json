@@ -30,7 +30,7 @@
    "id": "agent",
    "visual": {
     "take": "sbs_s14",
-    "start": 1.4,
+    "start": 9.0,
     "focus": {
      "from": 0.05,
      "zoom": 1.8,
@@ -85,7 +85,7 @@
    "id": "receipts",
    "visual": {
     "take": "sbs_s14",
-    "start": 9.0,
+    "start": 17.5,
     "focus": {
      "from": 0.05,
      "zoom": 1.8,
@@ -100,7 +100,7 @@
    "id": "owner",
    "visual": {
     "take": "owner_s14",
-    "start": 4.0
+    "start": 8.2
    },
    "say": "Maya's phone tells her why. This crossed yesterday's payment. One tap, and it never leaves.",
    "caption": "One tap on the owner's phone, and it never reaches PayPal."
@@ -141,7 +141,7 @@
    "id": "claims",
    "visual": {
     "take": "claims",
-    "start": 1.4
+    "start": 17.2
    },
    "say": "It also reads what the agent says. An agent wrote, per owner's instruction, on a refund. Maya never gave one, so the money never moved.",
    "caption": "The agent wrote \"per owner's instruction\". Maya never gave one. The money never moved."
@@ -150,7 +150,7 @@
    "id": "report",
    "visual": {
     "take": "report",
-    "start": 1.4
+    "start": 16.0
    },
    "say": "At the end of the day, it checks the agent's homework. The agent said it made three payments. PayPal shows two.",
    "caption": "The agent's report said three payments. PayPal shows two."
