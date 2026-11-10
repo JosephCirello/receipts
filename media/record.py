@@ -10,6 +10,11 @@ sharp: the window is 3840x2160 and the page is magnified 2x, which gives the sam
 1920x1080 window with twice the pixels (the two heights the page sets from the window's height are
 halved to match). --scale 1 records the plain 1920x1080 window. A headless browser has no cursor,
 so tap() draws a finger dot where a click lands.
+
+A take listed in REAL_WINDOW is recorded another way, for a shot of how the app lays itself out in a
+narrow window: the browser is started as on a screen with 3 device pixels to a page pixel, in a window
+of exactly that many page pixels, and every device pixel is recorded. Nothing is magnified and nothing
+is added to the page, so the take is what a visitor with a window that size sees.
 """
 from __future__ import annotations
 
@@ -186,12 +191,15 @@ def shot_results(page, base):
 
 
 NEMO = "nemotron-3-nano-omni-30b-a3b-reasoning"
+# the page's typefaces have arrived (until they do, the browser draws the text in a stand-in face, a little narrower)
+FONTS_IN = "() => document.fonts.status === 'loaded' && [...document.fonts].some((f) => f.status === 'loaded')"
 
 
 def shot_single(page, base, scenario, model, speed=1.5, hold=3.5, rep=None):
     """Receipts ON only, full width: one recorded real run replayed through Receipts and PayPal now."""
     page.goto(f"{base}/?scenario={scenario}&model={model}&speed={speed}&sbs=0&clean=1" + (f"&rep={rep}" if rep is not None else ""))
     page.wait_for_selector(".mail")
+    page.wait_for_function(FONTS_IN)
     time.sleep(1.2)
     mark("run the day")
     page.click("#go")
@@ -317,10 +325,14 @@ WINDOW = {"strip_s14": (1120, 1080), "summary_s14": (576, 640)}
 # ...and at another magnification. The summary bar is shown almost alone and large, so its take is recorded at 4x; at 576
 # page pixels wide the app puts its two sentences on two lines, each still whole.
 MAGNIFIED = {"summary_s14": 4}
+# a take of a real window: (page pixels wide, page pixels high, device pixels to a page pixel). At 724 page pixels the
+# app wraps the two reasons on a stopped refund onto two lines each, both whole, the second at its sentence break.
+REAL_WINDOW = {"claims_narrow": (724, 560, 3)}
 
 SHOTS = {
     "live_split": lambda p, b: shot_single(p, b, "S3_three_smaller_invoices", NEMO),
     "claims": lambda p, b: shot_single(p, b, "S5_i_am_the_owner", NEMO, rep=1),
+    "claims_narrow": lambda p, b: shot_single(p, b, "S5_i_am_the_owner", NEMO, rep=1),
     "report": lambda p, b: shot_single(p, b, "S9_normal_tuesday", NEMO, hold=4.5, rep=0),
     "owner": shot_owner,
     "mcp_term": shot_mcp_term,
@@ -355,18 +367,30 @@ def main():
     record(a.shot, a.url, a.theme)
 
 
+def open_window(pw, shot, theme, video_dir):
+    """The browser and the recording window for a shot: (browser, context, how much the page is magnified)."""
+    if shot in REAL_WINDOW:                         # a real window on a sharp screen: the page itself is left alone
+        w, h, d = REAL_WINDOW[shot]
+        br = pw.chromium.launch(args=[f"--force-device-scale-factor={d}", f"--window-size={w},{h}"])
+        ctx = br.new_context(no_viewport=True, color_scheme=theme, record_video_dir=str(video_dir),
+                             record_video_size={"width": w * d, "height": h * d})
+        return br, ctx, 1
+    s = MAGNIFIED.get(shot, SCALE[0])
+    w, h = WINDOW.get(shot, (W, H))
+    br = pw.chromium.launch()
+    ctx = br.new_context(viewport={"width": w * s, "height": h * s}, device_scale_factor=1, color_scheme=theme,
+                         record_video_dir=str(video_dir), record_video_size={"width": w * s, "height": h * s})
+    ctx.add_init_script(MAGNIFY % s)
+    return br, ctx, s
+
+
 def record(shot, url, theme):
     TAKES.mkdir(exist_ok=True)
     tmp = TAKES / f"_tmp_{shot}"
     shutil.rmtree(tmp, ignore_errors=True)
     usual = SCALE[0]
-    s = SCALE[0] = MAGNIFIED.get(shot, usual)       # tap() and glide() read it too
-    w, h = WINDOW.get(shot, (W, H))
     with sync_playwright() as pw:
-        br = pw.chromium.launch()
-        ctx = br.new_context(viewport={"width": w * s, "height": h * s}, device_scale_factor=1, color_scheme=theme,
-                             record_video_dir=str(tmp), record_video_size={"width": w * s, "height": h * s})
-        ctx.add_init_script(MAGNIFY % s)
+        br, ctx, SCALE[0] = open_window(pw, shot, theme, tmp)       # tap() and glide() read the magnification too
         page = ctx.new_page()
         T0[0] = time.time()                         # the video starts with the page; mark() prints seconds into the take
         page.request.post(f"{url}/api/reset")       # every take starts with no leftover holds
