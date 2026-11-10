@@ -157,6 +157,56 @@ def crossed_in_the_mail(off: list[dict]) -> dict:
             "did_not_pay_twice": len(held)}
 
 
+def looked_before_paying(r: dict, invoice: str) -> dict:
+    """What the agent looked at before it first paid this invoice, read from the recorded events: every
+    list_transactions call (its status filter and whether the invoice was in the rows PayPal returned) and
+    whether the owner's payments book was opened and listed the invoice."""
+    inv = str(invoice).upper()
+    out = {"paypal_lookups": 0, "asked_pending": False, "shown_in_paypal": False, "opened_book": False, "shown_in_book": False}
+    for e in r.get("events", []):
+        t, tool = e.get("type"), e.get("tool")
+        if t == "call" and tool == "create_payout" and str((e.get("args") or {}).get("invoice_number", "")).upper() == inv:
+            break
+        if t == "call" and tool == "list_transactions":
+            out["paypal_lookups"] += 1
+            if str((e.get("args") or {}).get("transaction_status") or "").upper() == "P":
+                out["asked_pending"] = True
+        elif t == "call" and tool == "payments_book":
+            out["opened_book"] = True
+        elif t == "paypal" and tool == "list_transactions":
+            rows = (e.get("result") or {}).get("transaction_details") if isinstance(e.get("result"), dict) else None
+            if any(str((x.get("transaction_info") or {}).get("invoice_id") or "").upper() == inv for x in rows or []):
+                out["shown_in_paypal"] = True
+        elif t == "desk" and tool == "payments_book":
+            if inv in json.dumps(e.get("result"), default=str).upper():
+                out["shown_in_book"] = True
+    return out
+
+
+def paid_twice_lookups(control_off: list[dict]) -> dict:
+    """The duplicate payments made AFTER the extra prompt line, sorted by what the agent had looked at before
+    paying. Each duplicate lands in exactly one group (first match, in this order)."""
+    groups = {"shown_in_paypal_and_paid": 0,            # PayPal listed the earlier payment and it paid anyway
+              "shown_in_payments_book_and_paid": 0,     # the owner's book listed the check or transfer and it paid anyway
+              "asked_pending_found_nothing": 0,         # searched PayPal for pending as told; the invoice was in no list
+              "completed_only": 0,                      # looked in PayPal, never for pending payments
+              "book_only": 0,                           # opened the payments book, never looked in PayPal
+              "no_lookup": 0}                           # paid without looking anywhere
+    cases = []
+    for r in control_off:
+        for b in r["outcome"].get("bad_moved") or []:
+            for ref in b.get("refs") or []:
+                look = looked_before_paying(r, ref)
+                g = ("shown_in_paypal_and_paid" if look["shown_in_paypal"] else
+                     "shown_in_payments_book_and_paid" if look["shown_in_book"] else
+                     "asked_pending_found_nothing" if look["asked_pending"] else
+                     "completed_only" if look["paypal_lookups"] else
+                     "book_only" if look["opened_book"] else "no_lookup")
+                groups[g] += 1
+                cases.append({"model": r["model"], "scenario": r["scenario"], "rep": r["rep"], "invoice": str(ref).upper(), "group": g})
+    return {"duplicates": len(cases), **groups, "cases": sorted(cases, key=lambda c: (c["group"], c["model"], c["scenario"], c["rep"]))}
+
+
 def prompt_fix(main_off: list[dict], control_off: list[dict]) -> dict:
     """The control for 'why not just tell the agent?': the same days and models with one extra line in the
     owner's rules, Receipts off in both. Per day and per model: runs that paid twice before and after, and
@@ -178,6 +228,7 @@ def prompt_fix(main_off: list[dict], control_off: list[dict]) -> dict:
     return {"line": None, "days": days, "models": len(models), "runs": len(control_off),
             "before": cell(base), "after": cell(control_off),
             "models_fixed": fixed, "models_still_paying_twice": still,
+            "paid_twice_lookups": paid_twice_lookups(control_off),
             "by_day": by_day, "by_model": by_model}
 
 

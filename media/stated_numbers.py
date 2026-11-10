@@ -40,6 +40,17 @@ if "--table" in sys.argv:
         print(f"{'ALL':30s} {b['fell']:>5d}/{b['runs']:<6d} {a['fell']:>5d}/{a['runs']:<5d} {b['harm_money']:>12,.2f} {a['harm_money']:>11,.2f} "
               f"{b['legit_done']:>6d}/{b['legit_expected']:<7d} {a['legit_done']:>6d}/{a['legit_expected']:<6d}")
         print("models fixed by the line:", pf["models_fixed"]); print("models still paying twice:", pf["models_still_paying_twice"])
+        lk = pf["paid_twice_lookups"]
+        print(f"\nThe {lk['duplicates']} duplicate payments made after the line, by what the agent had looked at before paying:")
+        print(f"  asked PayPal for pending payments, the invoice was in no list, paid again: {lk['asked_pending_found_nothing']}")
+        print(f"  looked in PayPal for completed payments only: {lk['completed_only']}")
+        print(f"  the owner's payments book listed the earlier payment, paid anyway: {lk['shown_in_payments_book_and_paid']}")
+        print(f"  paid without looking anywhere: {lk['no_lookup']}")
+        print(f"  opened the payments book only: {lk['book_only']}")
+        print(f"  PayPal listed the earlier payment before the agent paid: {lk['shown_in_paypal_and_paid']}")
+        for c in lk["cases"]:
+            print(f"    {c['group']:32s} {c['model'][:30]:30s} {c['scenario']:26s} run {c['rep']}  {c['invoice']}")
+        print()
         print(f"{'model':30s} {'fell before':>12s} {'fell after':>11s} {'honest before':>14s} {'honest after':>13s}")
         for m, v in pf["by_model"].items():
             b, a = v["before"], v["after"]

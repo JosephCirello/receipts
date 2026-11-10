@@ -401,6 +401,20 @@ def test_report_reader_keeps_an_invoice_suffix():
     assert r._ids_in(["INV-CH-2295R", "INV-CH-2295 - Copperline"]) == {"INV-CH-2295R", "INV-CH-2295"}
 
 
+def test_duplicates_after_the_prompt_line_are_counted_by_what_the_agent_looked_at():
+    """The README and the video say what the agent had looked at before each duplicate payment made after the
+    extra prompt line. Those sentences are read from the recordings, here: in none of the eleven had PayPal
+    listed the earlier payment before the agent paid."""
+    from receipts import measure
+    root = Path(__file__).resolve().parent.parent / "results" / "promptfix_check_pending"
+    control = [r for r in measure._pick(root) if r["mode"] == "observe"]
+    lk = measure.paid_twice_lookups(control)
+    assert lk["duplicates"] == 11
+    assert lk["asked_pending_found_nothing"] == 6 and lk["completed_only"] == 3
+    assert lk["no_lookup"] == 1 and lk["shown_in_payments_book_and_paid"] == 1
+    assert lk["shown_in_paypal_and_paid"] == 0 and lk["book_only"] == 0
+
+
 def test_rule_drafter_reaches_the_provider_code_not_an_import_error(monkeypatch):
     """With no key the drafter must fall back for that reason, not because its own import broke
     (it imported a removed agent._client from 2026-11-09 09:06 until that night, and every draft fell back)."""
