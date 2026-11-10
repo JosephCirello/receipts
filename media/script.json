@@ -47,7 +47,7 @@
     "slide": "pain1"
    },
    "caption": "",
-   "say": "We ran Maya's Tuesday twenty-four times, across twelve AI models, unguarded. Seventy-one percent of the time, the agent paid her twice."
+   "say": "We ran Maya's Tuesday thirty-eight times, across nineteen AI models, unguarded. Sixty-one percent of the time, the agent paid her twice."
   },
   {
    "id": "pain2",
@@ -58,12 +58,20 @@
    "say": "PayPal can cancel a payout only while it's unclaimed. Once her supplier has it, Maya has to call and ask for her money back."
   },
   {
+   "id": "price",
+   "visual": {
+    "slide": "price"
+   },
+   "say": "Surely a pricier model fixes it? One that cost thirty-five times more to run still paid her twice.",
+   "caption": ""
+  },
+  {
    "id": "advice1",
    "visual": {
     "slide": "advice1"
    },
    "caption": "",
-   "say": "The obvious fix is a line in the prompt: check pending payments too. We tried it, on a hundred ninety-two runs. It cut duplicate payments by two thirds."
+   "say": "The other obvious fix is a line in the prompt: check pending payments too. We tried it, on a hundred ninety-two runs. It cut duplicate payments by two thirds."
   },
   {
    "id": "advice2",
@@ -111,7 +119,7 @@
     "slide": "finding1"
    },
    "caption": "",
-   "say": "Across nineteen business days and nine hundred twelve runs, nine point four percent of every dollar an unguarded agent sent should never have left. About one in every eleven dollars."
+   "say": "Across nineteen AI models and fourteen hundred forty-four runs, seven percent of every dollar an unguarded agent sent should never have left. Seventy thousand in every million."
   },
   {
    "id": "finding2",
@@ -119,14 +127,14 @@
     "slide": "finding2"
    },
    "caption": "",
-   "say": "With Receipts, on the same days, not one dollar did. And ninety-seven percent of honest payments went straight through."
+   "say": "With Receipts, on the same days, not one dollar did. And ninety-eight percent of honest payments went straight through."
   },
   {
    "id": "rules",
    "visual": {
     "take": "rules"
    },
-   "say": "Maya doesn't write code. She writes her rules the way she'd tell a new hire: never pay a bill twice; call before you change where a supplier gets paid. Receipts turns that into rules it enforces, and shows her what it understood.",
+   "say": "Maya writes her rules the way she'd tell a new hire: never pay a bill twice; call before you change where a supplier gets paid. Receipts enforces them, and shows her what it understood.",
    "caption": "Maya writes her rules in plain English. Receipts enforces them, and shows her what it understood."
   },
   {
@@ -160,7 +168,7 @@
    "visual": {
     "slide": "how"
    },
-   "say": "One line for the engineers: Receipts runs on PayPal's own tools, its MCP server and Payouts API, and it plugs into any AI agent with one line in a settings file.",
+   "say": "For the engineers: it runs on PayPal's own MCP server and Payouts API, and plugs into any AI agent with one line of settings.",
    "caption": "For the engineers: built on PayPal's MCP server and Payouts API; plugs into any agent with one line."
   },
   {

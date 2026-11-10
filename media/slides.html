@@ -125,7 +125,11 @@
 
 
 <section class="slide" id="pain1">
-  <div class="big1"><div class="n bad">71%</div><div class="t">Unguarded, the agent paid Maya twice <b>71% of the time.</b></div><div class="u">Maya's Tuesday, run 24 times across 12 AI models (17 of 24).</div></div>
+  <div class="big1"><div class="n bad">61%</div><div class="t">Unguarded, the agent paid Maya twice <b>61% of the time.</b></div><div class="u">Maya's Tuesday, run 38 times across 19 AI models (23 of 38).</div></div>
+</section>
+
+<section class="slide" id="price">
+  <div class="big1"><div class="n bad">35x</div><div class="t">Paying <b>35x more</b> for the model didn't fix it.</div><div class="u">A model that cost 35x more to run the 19 days still paid Maya twice, both runs. The frontier models as a group still leaked 2.4%.</div></div>
 </section>
 
 <section class="slide" id="pain2">
@@ -133,7 +137,7 @@
 </section>
 
 <section class="slide" id="advice1">
-  <div class="big1"><div class="n good">&minus;67%</div><div class="t">One line in the agent's rules, "check pending payments too", cut duplicate payments by two thirds.</div><div class="u">192 runs, all twelve models, unguarded.</div></div>
+  <div class="big1"><div class="n good">&minus;67%</div><div class="t">One line in the agent's rules, "check pending payments too", cut duplicate payments by two thirds.</div><div class="u">192 runs, the twelve open models, unguarded.</div></div>
 </section>
 
 <section class="slide" id="advice2">
@@ -141,11 +145,11 @@
 </section>
 
 <section class="slide" id="finding1">
-  <div class="big1"><div class="n bad">9.4%</div><div class="t">of every dollar an <b>unguarded</b> AI agent sent should never have left the business.</div><div class="u">$94,000 of every $1 million paid. 134x PayPal's own loss rate. 19 business days, 912 runs.</div></div>
+  <div class="big1"><div class="n bad">7.0%</div><div class="t">of every dollar an <b>unguarded</b> AI agent sent should never have left the business.</div><div class="u">$70,000 of every $1 million paid. 100x PayPal's own loss rate. 19 business days, 19 AI models, 1,444 runs.</div></div>
 </section>
 
 <section class="slide" id="finding2">
-  <div class="big1"><div class="n good">$0.00</div><div class="t">with Receipts, on the same days. 97% of honest payments went straight through, none wrongly stopped.</div><div class="u">Harm is defined apart from the rules, so a trap Receipts missed would still count against it.</div></div>
+  <div class="big1"><div class="n good">$0.00</div><div class="t">with Receipts, on the same days. 98% of honest payments went straight through, none wrongly stopped.</div><div class="u">Harm is defined apart from the rules, so a trap Receipts missed would still count against it.</div></div>
 </section>
 
 <section class="slide" id="problem">
@@ -164,8 +168,8 @@
 </section>
 
 <section class="slide" id="pain">
-  <div class="kicker">Unguarded: we ran Maya's Tuesday 24 times, across 12 AI models</div>
-  <div class="big3"><div class="bad-t">71%<small>of runs paid her twice (17 of 24)</small></div><div>83%<small>of the models did it (10 of 12)</small></div><div>88%<small>of those had checked PayPal first (15 of 17)</small></div></div>
+  <div class="kicker">Unguarded: we ran Maya's Tuesday 38 times, across 19 AI models</div>
+  <div class="big3"><div class="bad-t">61%<small>of runs paid her twice (23 of 38)</small></div><div>68%<small>of the models did it (13 of 19)</small></div><div>91%<small>of those had checked PayPal first (21 of 23)</small></div></div>
   <div class="row"><span class="mark bad">!</span>They looked for completed payments. Hers was still processing.</div>
   <div class="note">PayPal can cancel a payout only while it is unclaimed. Once her supplier has it, Maya has to ask for her money back.</div>
   <div class="fine">Receipts off, two runs per model. PayPal's own list_transactions tool takes a status filter (S completed, P pending); every run that also asked for pending payments found hers and did not pay twice. Payout cancellation: developer.paypal.com, Payouts, Cancel or reverse payouts.</div>
@@ -177,18 +181,18 @@
   <div class="big3"><div>17% <span style="font-size:60px;color:var(--muted)">&rarr;</span> <span class="bad-t">5.7%</span><small>of runs still paid a bill twice</small></div><div class="good-t">&minus;67%<small>duplicate payments cut</small></div><div class="bad-t">1 in 3<small>got through anyway</small></div></div>
   <div class="row"><span class="mark bad">!</span>Six times, the agent looked up the payment, saw it, and paid again.</div>
   <div class="note">With Receipts on the same days: <b>0%</b>. Advice is not enforcement.</div>
-  <div class="fine">33 of 192 runs before, 11 of 192 after; same eight days (the six second notices and two honest controls), all twelve models, two runs each, Receipts off. One model also started holding honest bills as "possible duplicates". Every run is in results/promptfix_check_pending/.</div>
+  <div class="fine">33 of 192 runs before, 11 of 192 after; same eight days (the six second notices and two honest controls), the twelve open models, two runs each, Receipts off. One model also started holding honest bills as "possible duplicates". Every run is in results/promptfix_check_pending/.</div>
 </section>
 
 <section class="slide" id="finding">
-  <div class="kicker">912 runs &middot; 12 AI models &middot; 19 business days &middot; unguarded, then with Receipts</div>
-  <div class="hero"><div class="pct">9.4%</div><div class="what">of every dollar an <b>unguarded</b> AI agent sent<br><b>should never have left the business.</b><small>$79,544 of $845,520 with nothing between the agent and PayPal &middot; about 1 dollar in every 11 &middot; 90% of it, bills paid twice</small></div></div>
+  <div class="kicker">1,444 runs &middot; 19 AI models &middot; 19 business days &middot; unguarded, then with Receipts</div>
+  <div class="hero"><div class="pct">7.0%</div><div class="what">of every dollar an <b>unguarded</b> AI agent sent<br><b>should never have left the business.</b><small>$90,560 of $1,301,287 with nothing between the agent and PayPal &middot; about 1 dollar in every 14 &middot; 91% of it, bills paid twice</small></div></div>
   <div class="tiles three">
-    <div class="tile"><div class="k">With Receipts on</div><div class="v good-t">$0.00</div><div class="s">sent wrongly, the same 336 trap days</div></div>
-    <div class="tile"><div class="k">Honest payments untouched</div><div class="v">97%</div><div class="s">649 of 672; none wrongly stopped</div></div>
-    <div class="tile"><div class="k">Models that paid a bill twice</div><div class="v bad-t">10 of 12</div><div class="s">at least once, unguarded</div></div>
+    <div class="tile"><div class="k">With Receipts on</div><div class="v good-t">$0.00</div><div class="s">sent wrongly, the same 532 trap days</div></div>
+    <div class="tile"><div class="k">Honest payments untouched</div><div class="v">98%</div><div class="s">1,038 of 1,064; none wrongly stopped</div></div>
+    <div class="tile"><div class="k">Models that paid a bill twice</div><div class="v bad-t">13 of 19</div><div class="s">at least once, unguarded</div></div>
   </div>
-  <div class="fine">12 open models on Vultr Serverless Inference, two runs per model, day and arm. Harm is a fixed definition per day, written apart from the rules. Our 19 days hold more traps than a real month, so the share is about this test, not about every business. Measured against the PayPal stand-in, which mirrors PayPal's API shapes. Every transcript is in the repository.</div>
+  <div class="fine">12 open models on Vultr Serverless Inference and 7 frontier models from Anthropic, OpenAI and xAI; two runs per model, day and arm. Harm is a fixed definition per day, written apart from the rules. Our 19 days hold more traps than a real month, so the share is about this test, not about every business. Measured against the PayPal stand-in, which mirrors PayPal's API shapes. Every transcript is in the repository.</div>
 </section>
 
 <section class="slide quote" id="line">
@@ -230,14 +234,14 @@
 </section>
 
 <section class="slide" id="results">
-  <div class="kicker">912 runs &middot; unguarded, then with Receipts</div>
+  <div class="kicker">1,444 runs &middot; 19 AI models &middot; unguarded, then with Receipts</div>
   <div class="tiles">
-    <div class="tile"><div class="k">Sent wrongly, unguarded agent</div><div class="v bad-t">$79,544</div><div class="s">on 40 of 336 trap days</div></div>
-    <div class="tile"><div class="k">Sent wrongly, with Receipts</div><div class="v good-t">$0.00</div><div class="s">the same 336 days, measured the same way</div></div>
-    <div class="tile"><div class="k">Honest payments untouched</div><div class="v">97%</div><div class="s">649 of 672 went straight to PayPal; none wrongly stopped</div></div>
+    <div class="tile"><div class="k">Sent wrongly, unguarded agent</div><div class="v bad-t">$90,560</div><div class="s">on 46 of 532 trap days</div></div>
+    <div class="tile"><div class="k">Sent wrongly, with Receipts</div><div class="v good-t">$0.00</div><div class="s">the same 532 days, measured the same way</div></div>
+    <div class="tile"><div class="k">Honest payments untouched</div><div class="v">98%</div><div class="s">1,038 of 1,064 went straight to PayPal; none wrongly stopped</div></div>
     <div class="tile"><div class="k">Reports PayPal contradicts</div><div class="v">13</div><div class="s">end-of-day reports PayPal contradicts</div></div>
   </div>
-  <div class="fine">12 models on Vultr Serverless Inference; two runs per model, day and arm (presence, not frequency). Harm is a fixed definition per day, separate from the rules. Measured against the PayPal stand-in, which mirrors PayPal's API shapes. Every transcript is in the repository.</div>
+  <div class="fine">12 open models on Vultr Serverless Inference and 7 frontier models from Anthropic, OpenAI and xAI; two runs per model, day and arm (presence, not frequency). Harm is a fixed definition per day, separate from the rules. Measured against the PayPal stand-in, which mirrors PayPal's API shapes. Every transcript is in the repository.</div>
 </section>
 
 <section class="slide" id="cover">

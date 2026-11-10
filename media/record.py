@@ -8,6 +8,7 @@ real clicks. Nothing is mocked up. Output: media/takes/<shot>.webm
 from __future__ import annotations
 
 import argparse
+import json
 import shutil
 import time
 from pathlib import Path
@@ -104,7 +105,10 @@ def render_slides(base):
     with sync_playwright() as pw:
         br = pw.chromium.launch()
         pg = br.new_page(viewport={"width": W, "height": H})
-        for sid in ("hook", "maya", "notice", "pain1", "pain2", "advice1", "advice2", "finding1", "finding2", "line", "how", "results", "close", "cover"):
+        # every card the script uses, plus the stills for the README and Devpost gallery
+        plan = json.loads((HERE / "script.json").read_text(encoding="utf-8"))
+        ids = [s["visual"]["slide"] for s in plan["scenes"] if "slide" in s["visual"]]
+        for sid in ids + [x for x in ("pain", "finding", "advice", "results", "cover") if x not in ids]:
             pg.goto((HERE / "slides.html").as_uri() + "#" + sid)
             pg.wait_for_timeout(900)
             pg.screenshot(path=str(out / f"{sid}.png"))
