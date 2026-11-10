@@ -79,7 +79,7 @@ Small businesses are handing their payments to AI agents. PayPal's open-source M
 
 A prompt is advice the agent may or may not follow, and the owner cannot audit it. Receipts makes the same check in code, whatever the agent was told, and it ran the eight days at **0%**: $0.00 sent wrongly and no honest bill stopped.
 
-**A suggestion for PayPal.** In PayPal's MCP server, `list_transactions` shows finished payments unless the agent asks for the ones still on their way. On Maya's Tuesday every run that asked for those found her payment (15 of 15), and the one extra line above cut double payments by 67%. Saying the same thing in the tool's own description, or including payments still on their way by default, could reach every AI agent that pays through PayPal, with nobody rewriting a prompt. Receipts would still catch the third that got through. We are glad to share the runs.
+**A suggestion for PayPal.** In PayPal's MCP server, `list_transactions` shows finished payments unless the agent asks for the ones still on their way. In our 38 main runs of Maya's Tuesday, every run that asked for those found her payment (15 of 15), and the one extra line above cut double payments by 67%. Saying the same thing in the tool's own description, or including payments still on their way by default, could reach every AI agent that pays through PayPal, with nobody rewriting a prompt. Receipts would still catch the third that got through. We are glad to share the runs.
 
 ## Why it matters beyond Maya
 
