@@ -1,17 +1,29 @@
 """Cut the demo video: one segment per scene, timed to its narration, captions burned in.
 
-  python media/assemble.py            # needs media/build/vo (tts.py), media/takes (record.py), media/build/slides
+  python media/assemble.py            # needs media/build/vo (tts.py), media/takes (record.py),
+                                      # media/build/slides and media/build/rings (record.py slides, record.py rings)
 
 Takes are sped up (never slowed below real time) to fit the narration, then hold on
-their last frame. Cards get a slow push-in. Output: media/build/receipts_demo.mp4
+their last frame. Cards get a slow push-in. Output: media/build/receipts_demo.mp4 (voice and music),
+and media/build/receipts_demo_sfx.mp4, the same pictures with the two sound effects of media/sfx laid in.
 
 What a scene in script.json may carry, beyond its line, caption and visual:
   "lead": seconds of picture before the voice starts; "tail": seconds of picture added after it.
+  "sfx": [{"at": second of the scene, "sound": "ding" | "tap"}], a sound effect from media/sfx on that frame.
   visual "start": where in the take the scene begins; "speed": play the take at exactly this speed
-    (1 = real time) instead of fitting what is left of it to the line.
+    (1 = real time) instead of fitting what is left of it to the line; "end": stop the take there and
+    hold that frame (for a page that is standing still anyway).
   visual "focus": the camera on a take. Either the simple form {"from", "zoom", "cx", "cy", "still"},
     or {"keys": [[second, zoom, x, y], ...]}: at each second of the scene the camera is at that zoom,
-    centred on that point of the 1920x1080 page, and it eases from one key to the next.
+    centred on that point of the 1920x1080 page, and it eases from one key to the next. A key may carry
+    a fifth value, "out": the camera is already moving when the stretch starts and lands softly on that key.
+  visual "ring": {"at": second, "for": seconds, "box": [x, y, w, h]}: a hand-drawn red ring drawn on the page
+    (so it moves with the camera) around that box of the 1920x1080 page; it draws itself, stays, and fades.
+  visual "mask": {"keep": [x, y, w, h], "soft": [above, below]}: only that box of the 1920x1080 page is shown;
+    the rest of the page is covered with the page's own background colour (for a shot of one line of the
+    page and nothing else). "soft": the cover comes in gradually over that many page pixels above and below.
+  visual "inset": on a card, a strip of a take laid over it: {"take", "start", "speed", "crop": [x, y, w, h]
+    of the take's page, "at": [x, y] on the card, "width": its width on the card}.
   visual "then": a second picture for the rest of the same line, {"at": second, ...a visual...},
     with its own optional "caption" from that second on.
 """
@@ -26,6 +38,8 @@ B = HERE / "build"
 SEG = B / "segments"
 PAD = 0.7          # breath after each line
 FPS = 30
+RING_FADE = 0.35   # a ring fades out over its last 0.35 s
+PAGE_BG = "0xf5f1e9"   # the app's page background (#f4f0e8) as a take records it: this value comes out equal to it in the cut
 
 
 def dur(p: Path) -> float:
@@ -52,23 +66,27 @@ def run(cmd):
         raise SystemExit(r.stderr[-2000:])
 
 
-def eased(keys, col):
-    """One camera value over the scene, as an ffmpeg expression in the output frame number: it holds each key's
-    value and eases (smoothstep) to the next."""
-    pts = [(int(round(k[0] * FPS)), float(k[col])) for k in keys]
-    expr = f"{pts[-1][1]:.4f}"
-    for (n0, v0), (n1, v1) in reversed(list(zip(pts, pts[1:]))):
+def eased(keys, value):
+    """One camera value over the scene, as an ffmpeg expression in the output frame number. It holds each
+    key's value and eases to the next: gently away and gently in (the default), or, for a key marked "out",
+    already moving at the start of the stretch and landing softly."""
+    pts = [(int(round(k[0] * FPS)), float(value(k)), k[4] if len(k) > 4 else "inout") for k in keys]
+    expr = f"{pts[-1][1]:.6f}"
+    for (n0, v0, _), (n1, v1, how) in reversed(list(zip(pts, pts[1:]))):
         u = f"((on-{n0})/{max(1, n1 - n0)})"
-        seg = f"{v0:.4f}" if v0 == v1 else f"({v0:.4f}+({v1 - v0:.4f})*{u}*{u}*(3-2*{u}))"
+        e = f"(1-(1-{u})*(1-{u}))" if how == "out" else f"({u}*{u}*(3-2*{u}))"
+        seg = f"{v0:.6f}" if v0 == v1 else f"({v0:.6f}+({v1 - v0:.6f})*{e})"
         expr = f"if(lt(on,{n1}),{seg},{expr})"
-    return f"if(lt(on,{pts[0][0]}),{pts[0][1]:.4f},{expr})"
+    return f"if(lt(on,{pts[0][0]}),{pts[0][1]:.6f},{expr})"
 
 
 def camera(fo, d):
-    """The zoompan filter for a take's focus (the take is 3840x2160 by then; the picture out is 1920x1080)."""
+    """The zoompan filter for a take's focus (the take is 3840x2160 by then; the picture out is 1920x1080).
+    Between keys it is the frame's edges that move evenly, so a push-in does not lurch at its start."""
     if "keys" in fo:
-        z, cx, cy = (eased(fo["keys"], c) for c in (1, 2, 3))
-        return (f",zoompan=z='{z}':x='max(0,min(iw-iw/zoom,({cx})*iw/1920-iw/zoom/2))'"
+        w = eased(fo["keys"], lambda k: 1 / k[1])            # the width of the frame, as a share of the page
+        cx, cy = eased(fo["keys"], lambda k: k[2]), eased(fo["keys"], lambda k: k[3])
+        return (f",zoompan=z='1/({w})':x='max(0,min(iw-iw/zoom,({cx})*iw/1920-iw/zoom/2))'"
                 f":y='max(0,min(ih-ih/zoom,({cy})*ih/1080-ih/zoom/2))':d=1:s=1920x1080:fps={FPS}")
     n0, z = int(fo["from"] * d * FPS), fo["zoom"]
     step = (z - 1) / max(1, int(0.35 * d * FPS))
@@ -76,30 +94,76 @@ def camera(fo, d):
     return f",zoompan=z='{zexpr}':x='(iw-iw/zoom)*{fo['cx']}':y='(ih-ih/zoom)*{fo['cy']}':d=1:s=1920x1080:fps={FPS}"
 
 
-def picture(v, d, i):
-    """One picture held for d seconds: its ffmpeg input, and the filter chain from input i to [p<i>]."""
+def take_chain(v, d, i, size="3840:2160"):
+    """A take laid out at an even frame rate from its start time (a take only stores a frame when the page
+    changes, so the scene starts on exactly what was on screen at `start`), at its speed, for d seconds."""
+    src = HERE / "takes" / f"{v['take']}.webm"
+    start = float(v.get("start", 0))            # skip the page load at the head of a take
+    f = float(v["speed"]) if "speed" in v else max(1.0, min(3.0, (dur(src) - start) / d))
+    end = f":end={float(v['end']):.3f}" if "end" in v else ""
+    fit = f"scale={size}:flags=lanczos," if size else ""        # an inset strip is cut from the take at its own size
+    return (["-i", str(src)],
+            f"[{i}:v]fps={FPS},trim=start={start:.3f}{end},setpts=(PTS-STARTPTS)/{f:.4f},fps={FPS},{fit}"
+            f"tpad=stop_mode=clone:stop_duration=30,trim=duration={d},setpts=PTS-STARTPTS")
+
+
+def picture(v, d, i, tag):
+    """One picture held for d seconds: its ffmpeg inputs (the first is input number i), and the filter chains
+    that end in [p<tag>]. The page (a take or a card) is built at 3840x2160; what is drawn on the page (an
+    inset strip of a take, a red ring) goes on before the camera, so it moves with the page."""
+    ins, chains = [], []
+    fo, ring, inset = v.get("focus"), v.get("ring"), v.get("inset")
     if "take" in v:
-        src = HERE / "takes" / f"{v['take']}.webm"
-        start = float(v.get("start", 0))            # skip the page load at the head of a take
-        f = float(v["speed"]) if "speed" in v else max(1.0, min(3.0, (dur(src) - start) / d))
-        fo = v.get("focus")
-        # a take only stores a frame when the page changes, so it is laid out at an even frame rate first:
-        # the scene then starts on exactly what was on screen at `start`, not on the next change after it
-        chain = (f"[{i}:v]fps={FPS},trim=start={start:.3f},setpts=(PTS-STARTPTS)/{f:.4f},fps={FPS},"
-                 f"scale={'3840:2160' if fo else '1920:1080'}:flags=lanczos,"
-                 f"tpad=stop_mode=clone:stop_duration=20,trim=duration={d},setpts=PTS-STARTPTS{camera(fo, d) if fo else ''}[p{i}]")
-        return ["-i", str(src)], chain
-    src = B / "slides" / f"{v['slide']}.png"
-    frames = int(d * FPS)
-    chain = (f"[{i}:v]scale=3840:2160,zoompan=z='1+0.035*on/{frames}':x='iw/2-(iw/zoom/2)':y='ih/2-(ih/zoom/2)':d=1:s=1920x1080:fps={FPS},"
-             f"trim=duration={d},setpts=PTS-STARTPTS[p{i}]")
-    return ["-loop", "1", "-framerate", str(FPS), "-t", f"{d + 0.2:.2f}", "-i", str(src)], chain
+        big = bool(fo or ring)
+        inp, chain = take_chain(v, d, i, "3840:2160" if big else "1920:1080")
+        if not big:
+            return inp, [chain + f"[p{tag}]"], 1
+        ins += inp
+        chains.append(chain + f"[b{tag}0]")
+    else:
+        src = B / "slides" / f"{v['slide']}.png"
+        ins += ["-loop", "1", "-framerate", str(FPS), "-t", f"{d + 0.2:.2f}", "-i", str(src)]
+        chains.append(f"[{i}:v]scale=3840:2160,trim=duration={d + 0.1:.2f},setpts=PTS-STARTPTS[b{tag}0]")
+    used, layer = 1, 0
+    if v.get("mask"):
+        x, y, w, h = (int(round(c * 2)) for c in v["mask"]["keep"])
+        col = v["mask"].get("color", PAGE_BG)
+        up, down = (int(c) for c in v["mask"].get("soft", [0, 0]))
+        boxes = [(0, 0, 3840, y - up * 2, 1), (0, y + h + down * 2, 3840, 2160 - y - h - down * 2, 1), (0, y, x, h, 1), (x + w, y, 3840 - x - w, h, 1)]
+        boxes += [(0, y - 2 * (k + 1), 3840, 2, (k + 0.5) / up) for k in range(up)]             # the cover fades in over the rows above...
+        boxes += [(0, y + h + 2 * k, 3840, 2, (k + 0.5) / down) for k in range(down)]           # ...and below the box
+        chains.append(f"[b{tag}{layer}]" + ",".join(f"drawbox=x={bx}:y={by}:w={bw}:h={bh}:color={col}@{al:.3f}:t=fill" for bx, by, bw, bh, al in boxes if bw > 0 and bh > 0)
+                      + f"[b{tag}{layer + 1}]")
+        layer += 1
+    if inset:
+        x, y, w, h = inset["crop"]
+        inp, chain = take_chain(inset, d + 0.1, i + used, None)
+        ins += inp
+        chains.append(chain + f",crop={w * 2:.0f}:{h * 2:.0f}:{x * 2:.0f}:{y * 2:.0f},scale={inset['width'] * 2:.0f}:-2:flags=lanczos[in{tag}]")
+        chains.append(f"[b{tag}{layer}][in{tag}]overlay=x={inset['at'][0] * 2:.0f}:y={inset['at'][1] * 2:.0f}:eof_action=repeat[b{tag}{layer + 1}]")
+        used, layer = used + 1, layer + 1
+    if ring:
+        g = json.loads((B / "rings" / ring["id"] / "geom.json").read_text(encoding="utf-8"))
+        at, life = float(ring["at"]), float(ring["for"])
+        ins += ["-framerate", str(FPS), "-i", str(B / "rings" / ring["id"] / "%02d.png")]
+        chains.append(f"[{i + used}:v]format=rgba,tpad=stop_mode=clone:stop_duration={life:.2f},fade=t=out:st={life - RING_FADE:.2f}:d={RING_FADE}:alpha=1,"
+                      f"trim=duration={life:.2f},setpts=PTS-STARTPTS+{at:.3f}/TB[rg{tag}]")
+        chains.append(f"[b{tag}{layer}][rg{tag}]overlay=x={g['x']}:y={g['y']}:eof_action=pass:enable='between(t,{at:.3f},{at + life:.3f})'[b{tag}{layer + 1}]")
+        used, layer = used + 1, layer + 1
+    if "take" in v:
+        cam = camera(fo, d)[1:] if fo else "scale=1920:1080:flags=lanczos"
+        chains.append(f"[b{tag}{layer}]{cam},trim=duration={d},setpts=PTS-STARTPTS[p{tag}]")
+    else:
+        frames = int(d * FPS)
+        chains.append(f"[b{tag}{layer}]zoompan=z='1+0.035*on/{frames}':x='iw/2-(iw/zoom/2)':y='ih/2-(ih/zoom/2)':d=1:s=1920x1080:fps={FPS},"
+                      f"trim=duration={d},setpts=PTS-STARTPTS[p{tag}]")
+    return ins, chains, used
 
 
 def main(only=()):
     plan = json.loads((HERE / "script.json").read_text(encoding="utf-8"))
     SEG.mkdir(parents=True, exist_ok=True)
-    listing, times = [], []
+    listing, times, effects = [], [], []
     t_total = 0.0
     for i, s in enumerate(plan["scenes"]):
         vo = B / "vo" / f"{s['id']}.mp3"
@@ -107,40 +171,51 @@ def main(only=()):
         T = round(lead + dur(vo) + PAD + tail + (1.4 if i == len(plan["scenes"]) - 1 else 0), 2)
         out = f"seg_{i:02d}.mp4"
         listing.append(f"file '{out}'")
-        times.append({"scene": s["id"], "start": round(t_total, 2), "length": T})
+        v = s["visual"]
+        then = v.get("then")
+        marks = {"scene": s["id"], "start": round(t_total, 2), "length": T}
+        for pv, at in ((v, 0.0), (then or {}, float((then or {}).get("at", 0)))):
+            if pv.get("ring"):
+                marks.setdefault("rings", []).append({"from": round(t_total + at + pv["ring"]["at"], 2), "to": round(t_total + at + pv["ring"]["at"] + pv["ring"]["for"], 2)})
+        for e in s.get("sfx", []):
+            effects.append({"sound": e["sound"], "at": round(t_total + float(e["at"]), 3), "scene": s["id"]})
+        times.append(marks)
         t_total += T
         if only and s["id"] not in only:            # python media/assemble.py <scene id ...>: recut only these scenes
             continue
-        v = s["visual"]
-        then = v.get("then")
         parts = [(v, round(float(then["at"]), 2)), (then, round(T - float(then["at"]), 2))] if then else [(v, T)]
         caps = [(s["caption"], 0.15, (float(then["at"]) if then and "caption" in then else T) - 0.1)] if s["caption"] else []
         if then and then.get("caption"):
             caps.append((then["caption"], float(then["at"]) + 0.1, T - 0.1))
         sub = f"cap_{i:02d}.ass"
         ass(caps, SEG / sub)
-        cmd, chains = ["ffmpeg", "-y", "-v", "error"], []
+        cmd, chains, n = ["ffmpeg", "-y", "-v", "error"], [], 0
         for k, (pv, d) in enumerate(parts):
-            inp, chain = picture(pv, d, k)
+            if pv.get("ring"):
+                pv["ring"]["id"] = s["id"] + ("_then" if k else "")
+            inp, ch, used = picture(pv, d, n, k)
             cmd += inp
-            chains.append(chain)
+            chains += ch
+            n += used
         joined = "".join(f"[p{k}]" for k in range(len(parts)))
         chains.append(f"{joined}concat=n={len(parts)}:v=1:a=0,subtitles={sub}[v]" if len(parts) > 1 else f"[p0]subtitles={sub}[v]")
         late = f"adelay={int(lead * 1000)}:all=1," if lead else ""
-        chains.append(f"[{len(parts)}:a]{late}apad,atrim=duration={T},asetpts=PTS-STARTPTS[a]")
+        chains.append(f"[{n}:a]{late}apad,atrim=duration={T},asetpts=PTS-STARTPTS[a]")
         cmd += ["-i", str(vo), "-filter_complex", ";".join(chains),
                 "-map", "[v]", "-map", "[a]", "-c:v", "libx264", "-preset", "medium", "-crf", "19", "-pix_fmt", "yuv420p",
                 "-r", str(FPS), "-c:a", "aac", "-b:a", "192k", "-ar", "48000", "-ac", "2", "-t", f"{T}", out]
         run(cmd)
         print(f"{i:02d} {s['id']:9s} starts {t_total - T:6.2f}s  {T:5.2f}s  total {t_total:6.2f}s", flush=True)
     (SEG / "list.txt").write_text("\n".join(listing) + "\n", encoding="utf-8")
-    (B / "timings.json").write_text(json.dumps(times, indent=1), encoding="utf-8")
+    (B / "timings.json").write_text(json.dumps({"scenes": times, "sfx": effects}, indent=1), encoding="utf-8")
     final = B / "receipts_demo.mp4"
     run(["ffmpeg", "-y", "-v", "error", "-f", "concat", "-safe", "0", "-i", "list.txt", "-c", "copy", "-movflags", "+faststart", str(final)])
     print(f"wrote {final}  ({dur(final):.1f}s)")
     music = HERE / "music" / "bed.mp3"          # provenance in media/music/SOURCE.md
     if music.exists():
         add_music(final, music)
+    if effects:
+        add_effects(final, effects)
 
 
 def add_music(final: Path, music: Path):
@@ -159,6 +234,19 @@ def add_music(final: Path, music: Path):
     final.write_bytes(out.read_bytes())
     out.unlink()
     print(f"music bed laid under the narration ({music.name}); voice-only cut kept at {quiet.name}")
+
+
+def add_effects(final: Path, effects):
+    """The same video with the sound effects of media/sfx laid in at their frames (provenance in
+    media/sfx/SOURCE.md). The picture is copied, not re-encoded, so the two files show the same frames."""
+    out = final.with_name(final.stem + "_sfx.mp4")
+    cmd, fc = ["ffmpeg", "-y", "-v", "error", "-i", str(final)], []
+    for k, e in enumerate(effects, 1):
+        cmd += ["-i", str(HERE / "sfx" / f"{e['sound']}.wav")]
+        fc.append(f"[{k}:a]aformat=sample_rates=48000:channel_layouts=stereo,adelay={int(round(e['at'] * 1000))}:all=1[e{k}]")
+    fc.append("[0:a]" + "".join(f"[e{k}]" for k in range(1, len(effects) + 1)) + f"amix=inputs={len(effects) + 1}:duration=first:dropout_transition=0:normalize=0[a]")
+    run(cmd + ["-filter_complex", ";".join(fc), "-map", "0:v", "-map", "[a]", "-c:v", "copy", "-c:a", "aac", "-b:a", "192k", "-movflags", "+faststart", str(out)])
+    print(f"sound effects laid in ({', '.join(e['sound'] + '@' + format(e['at'], '.2f') for e in effects)}): {out.name}")
 
 
 if __name__ == "__main__":
