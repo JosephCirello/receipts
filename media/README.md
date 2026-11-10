@@ -12,4 +12,4 @@ python media/assemble.py                         # media/build/receipts_demo.mp4
 python media/stated_numbers.py                          # every number the video and README state, from results/episodes_scored.jsonl
 ```
 
-`script.json` is the cut: one scene per narration line, each with its visual (a take or a card), an optional start trim and an optional slow zoom. Takes are only ever sped up to fit their line, never slowed. If a number in `stated_numbers.py` changes, the narration, the captions, `slides.html` and the README change with it.
+`script.json` is the cut: one scene per narration line, each with its visual (a take or a card), an optional start trim and an optional camera (a zoom onto the one line that matters; the options are listed at the top of `assemble.py`). Takes are recorded at 3840x2160, the page magnified 2x in a window twice the size, so a zoomed shot stays sharp; a finger dot is drawn where a click lands, because a headless browser has no cursor. Takes are only ever sped up to fit their line, never slowed. If a number in `stated_numbers.py` changes, the narration, the captions, `slides.html` and the README change with it.
