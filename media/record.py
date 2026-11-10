@@ -1,9 +1,15 @@
-"""Scripted screen recordings of the real app for the demo video (Playwright, 1920x1080).
+"""Scripted screen recordings of the real app for the demo video (Playwright).
 
-  python media/record.py <shot> [--url http://127.0.0.1:8090]
+  python media/record.py <shot> [--url http://127.0.0.1:8090] [--scale 2]
 
 Each shot is one clean take of the working product: a real page, real data,
 real clicks. Nothing is mocked up. Output: media/takes/<shot>.webm
+
+Takes are recorded at twice the size (3840x2160) so the cut can zoom in on one line and keep it
+sharp: the window is 3840x2160 and the page is magnified 2x, which gives the same layout as a
+1920x1080 window with twice the pixels (the two heights the page sets from the window's height are
+halved to match). --scale 1 records the plain 1920x1080 window. A headless browser has no cursor,
+so tap() draws a finger dot where a click lands.
 """
 from __future__ import annotations
 
@@ -18,7 +24,41 @@ from playwright.sync_api import sync_playwright
 HERE = Path(__file__).resolve().parent
 TAKES = HERE / "takes"
 W, H = 1920, 1080
+SCALE = [2]
 T0 = [0.0]
+
+# runs before the page's own scripts on every load: magnify the page, and keep the layout that of a 1920x1080 window
+MAGNIFY = """
+(() => {
+  const S = %d;
+  if (S === 1) return;
+  const go = () => {
+    document.documentElement.style.zoom = S;
+    const st = document.createElement("style");
+    st.textContent = `.feed{max-height:${72 / S}vh !important} .grid{height:${72 / S}vh !important}`;
+    document.head.appendChild(st);
+  };
+  if (document.head) go(); else document.addEventListener("DOMContentLoaded", go);
+})();
+"""
+
+# the finger dot: lands, presses, fades (pointer-events off, so the click goes to the page under it)
+DOT = """
+([x, y, press]) => {
+  const d = document.createElement("div");
+  d.style.cssText = `position:fixed;left:${x}px;top:${y}px;width:46px;height:46px;margin:-23px 0 0 -23px;border-radius:50%;` +
+    "background:rgba(20,33,61,.30);border:2.5px solid rgba(255,255,255,.95);box-shadow:0 2px 10px rgba(20,33,61,.35);pointer-events:none;z-index:99999";
+  document.documentElement.appendChild(d);
+  const a = d.animate([{ transform: "scale(1.9)", opacity: 0 }, { transform: "scale(1)", opacity: 1 }], { duration: 320, easing: "ease-out", fill: "forwards" });
+  a.finished.then(() => new Promise((r) => setTimeout(r, press - 320)))
+    .then(() => d.animate([{ transform: "scale(1)", opacity: 1 }, { transform: "scale(.72)", opacity: 1, offset: .25 }, { transform: "scale(1.5)", opacity: 0 }], { duration: 520, easing: "ease-out", fill: "forwards" }).finished)
+    .then(() => d.remove());
+}
+"""
+
+
+# the two sides grow past the bottom of the window as the day is worked: keep scrolling down to the newest line, as a viewer would
+FOLLOW = "() => { const tick = () => { window.scrollBy(0, 12); requestAnimationFrame(tick); }; requestAnimationFrame(tick); }"
 
 
 def mark(what):
@@ -26,44 +66,79 @@ def mark(what):
     print(f"  {time.time() - T0[0]:6.2f}s  {what}", flush=True)
 
 
+def tap(page, selector, click=True, lead=0.45):
+    """Click a control with the finger dot drawn where the click lands (click=False: point at it only)."""
+    b = page.locator(selector).first.bounding_box()
+    x, y = b["x"] + b["width"] / 2, b["y"] + b["height"] / 2
+    s = SCALE[0]
+    page.evaluate(DOT, [x / s, y / s, int(lead * 1000)])
+    time.sleep(lead)
+    if click:
+        page.mouse.click(x, y)
+    else:
+        page.mouse.move(x, y)
+
+
+def glide(page, top, seconds=1.2):
+    """Scroll the page to `top` (in 1920x1080 page pixels) at an even, eased pace."""
+    page.evaluate("""([top, ms]) => new Promise((done) => {
+        const from = scrollY, t0 = performance.now();
+        const step = (t) => { const u = Math.min(1, (t - t0) / ms), e = u * u * (3 - 2 * u);
+          window.scrollTo(0, from + (top - from) * e); if (u < 1) requestAnimationFrame(step); else done(); };
+        requestAnimationFrame(step); })""", [top * SCALE[0], int(seconds * 1000)])
+
+
 def shot_sbs(page, base, scenario, model, speed=1.4, hold=4, rep=None):
     """The side-by-side: Receipts off on the left, on on the right, one recorded real run each."""
     page.goto(f"{base}/?scenario={scenario}&model={model}&speed={speed}&clean=1" + (f"&rep={rep}" if rep is not None else ""))
     page.wait_for_selector(".mail")
     time.sleep(1.5)
+    mark("run the day")
     page.click("#go")
+    page.evaluate(FOLLOW)
+    page.wait_for_selector("#feed-enforce .verdict", timeout=240_000)
+    mark("Receipts' verdict on screen")
     page.wait_for_function("document.querySelectorAll('.done').length >= 2", timeout=240_000)
+    mark("both sides finished")
     time.sleep(hold)
 
 
 def shot_rules(page, base):
+    """Her rules in her words on the left; one press, and what Receipts understood on the right, each with her words under it."""
     page.goto(f"{base}/#rules")
     page.wait_for_selector("#english")
-    time.sleep(1.5)
-    page.click("#compile")
+    page.wait_for_function("document.querySelector('#english').value.length > 20")
+    time.sleep(4.0)
+    mark("tap Turn these into exact rules")
+    tap(page, "#compile")
+    time.sleep(0.3)
     page.wait_for_function("!document.querySelector('#compile').disabled", timeout=120_000)
-    time.sleep(2.5)
-    page.click("#usePolicy")
-    time.sleep(2)
+    mark("drafted")
+    time.sleep(6.0)
 
 
 def shot_ledger(page, base):
-    """Maya's book: the one-tap views change the rows and the live totals; the download is the accountant's copy."""
+    """Maya's book: the one-tap view changes the rows and the live totals; the download is the accountant's copy."""
     page.goto(f"{base}/#ledger")
     page.wait_for_selector(".ag-row")
-    time.sleep(1.2)
-    page.click("#ledgerViews [data-view=held]")
-    time.sleep(1.8)
-    page.click("#ledgerViews [data-view=twice]")
-    time.sleep(2.2)
-    page.hover("#exportCsv")
-    time.sleep(1.4)
+    time.sleep(2.5)
+    mark("tap Would have paid twice")
+    tap(page, "#ledgerViews [data-view=twice]")
+    time.sleep(3.2)
+    mark("point at Download for the accountant")
+    tap(page, "#exportCsv", click=False, lead=1.6)
+    time.sleep(1.5)
 
 
 def shot_results(page, base):
+    """What we measured: the headline and the tiles, then down to the cost-against-loss chart."""
     page.goto(f"{base}/#results")
     page.wait_for_selector(".tile")
-    time.sleep(4)
+    page.wait_for_selector("#costChart svg")
+    time.sleep(4.5)
+    mark("glide down to the chart")
+    glide(page, 548, 1.3)
+    time.sleep(4.5)
 
 
 NEMO = "nemotron-3-nano-omni-30b-a3b-reasoning"
@@ -74,12 +149,14 @@ def shot_single(page, base, scenario, model, speed=1.5, hold=3.5, rep=None):
     page.goto(f"{base}/?scenario={scenario}&model={model}&speed={speed}&sbs=0&clean=1" + (f"&rep={rep}" if rep is not None else ""))
     page.wait_for_selector(".mail")
     time.sleep(1.2)
+    mark("run the day")
     page.click("#go")
     page.wait_for_function("document.querySelectorAll('.done').length >= 1", timeout=240_000)
+    mark("day finished")
     time.sleep(hold)
 
 
-def shot_owner(page, base, scenario="S3_three_smaller_invoices", model=None, button="approve", read=2.5):
+def shot_owner(page, base, scenario="S3_three_smaller_invoices", model=None, button="approve", read=2.5, after=3):
     """A held move lands on the owner's phone; she taps Approve (it goes to PayPal) or Decline (it never does)."""
     page.request.post(f"{base}/api/reset")
     page.goto(f"{base}/?scenario={scenario}&model={model or NEMO}&speed=6&sbs=0&clean=1")
@@ -91,9 +168,10 @@ def shot_owner(page, base, scenario="S3_three_smaller_invoices", model=None, but
     mark("phone on screen")
     time.sleep(read)
     mark(f"tap {button}")
-    page.click(f".hold .{button}")
+    tap(page, f".hold .{button}")
     page.wait_for_selector(".hold .state", timeout=30_000)
-    time.sleep(3)
+    mark("card answered")
+    time.sleep(after)
 
 
 # the crossed-in-the-mail day: chosen from the recorded runs after the batch (an observe run that checked
@@ -135,7 +213,7 @@ SHOTS = {
     "mcp_term": shot_mcp_term,
     "sbs_s2": lambda p, b: shot_sbs(p, b, "S2_second_notice", "glm-5.2"),
     "sbs_s14": lambda p, b: shot_sbs(p, b, "S14_crossed_in_the_mail", S14_MODEL, speed=1.2, hold=5, rep=0),
-    "owner_s14": lambda p, b: shot_owner(p, b, "S14_crossed_in_the_mail", S14_MODEL, button="decline", read=5),
+    "owner_s14": lambda p, b: shot_owner(p, b, "S14_crossed_in_the_mail", S14_MODEL, button="decline", read=6, after=5),
     "rules": shot_rules,
     "ledger": shot_ledger,
     "results": shot_results,
@@ -147,7 +225,9 @@ def main():
     ap.add_argument("shot", choices=sorted(SHOTS) + ["slides", "all"])
     ap.add_argument("--url", default="http://127.0.0.1:8090")
     ap.add_argument("--theme", default="light")
+    ap.add_argument("--scale", type=int, default=2, choices=(1, 2), help="2 records 3840x2160 (the page magnified 2x); 1 records 1920x1080")
     a = ap.parse_args()
+    SCALE[0] = a.scale
     if a.shot == "slides":
         return render_slides(a.url)
     if a.shot == "all":
@@ -161,10 +241,12 @@ def record(shot, url, theme):
     TAKES.mkdir(exist_ok=True)
     tmp = TAKES / f"_tmp_{shot}"
     shutil.rmtree(tmp, ignore_errors=True)
+    s = SCALE[0]
     with sync_playwright() as pw:
         br = pw.chromium.launch()
-        ctx = br.new_context(viewport={"width": W, "height": H}, device_scale_factor=1, color_scheme=theme,
-                             record_video_dir=str(tmp), record_video_size={"width": W, "height": H})
+        ctx = br.new_context(viewport={"width": W * s, "height": H * s}, device_scale_factor=1, color_scheme=theme,
+                             record_video_dir=str(tmp), record_video_size={"width": W * s, "height": H * s})
+        ctx.add_init_script(MAGNIFY % s)
         page = ctx.new_page()
         T0[0] = time.time()                         # the video starts with the page; mark() prints seconds into the take
         page.request.post(f"{url}/api/reset")       # every take starts with no leftover holds
