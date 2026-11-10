@@ -194,9 +194,9 @@ pytest -q                                            # 44 tests, no network
 uvicorn app:app --port 8090
 ```
 
-Open http://localhost:8090. **Live** replays recorded real runs through Receipts and PayPal now (side by side: Receipts off and on), or runs a model live. **Owner** is the phone. **Rules** turns plain English into enforced rules. **Ledger** is Maya's book of every decision (AG Grid): one-tap views, live totals, a download for the accountant. **Results** is the measurement, with cost against harm per model.
+Open http://localhost:8090. **Watch** replays recorded real runs through Receipts and PayPal now (side by side: Receipts off and on), or runs a model live (under *More options*). **Maya's phone** is where held moves wait for her. **Her rules** turns plain English into enforced rules. **Her book** is every decision (AG Grid): one-tap views, live totals, a download for the accountant. **Results** is the measurement, with cost against harm per model.
 
-Three minutes for a judge: pick the day *Crossed in the mail*, press *Run the day*, watch the left side pay twice and the right side hold, then open *Owner* and tap *Decline*.
+Three minutes for a judge: it opens on Maya's Tuesday (*Crossed in the mail*). Press *Run the day*, watch the left side pay twice and the right side hold, then press *Open Maya's phone* and tap *Decline*.
 
 ### With your PayPal sandbox
 

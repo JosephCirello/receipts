@@ -44,6 +44,10 @@ async function boot() {
   };
   $("#scn").addEventListener("change", note);
   $("#sbs").addEventListener("change", () => $("#arms").classList.toggle("single", !$("#sbs").checked));
+  $("#every").addEventListener("change", () => $("#arms").classList.toggle("every", $("#every").checked));
+  $("#source").addEventListener("change", () => ($("#runNote").textContent = $("#source").value === "live"
+    ? "A new run: the AI works the day live, right now." : "A real recorded run, replayed through Receipts now."));
+  $("#arms").addEventListener("click", (ev) => { const b = ev.target.closest(".bubble"); if (b) b.classList.toggle("open"); });
   $("#go").addEventListener("click", runDay);
   if (new URLSearchParams(location.search).get("clean") === "1") $("#howto").classList.add("gone");
   try { if (localStorage.getItem("howto-gone") === "1") $("#howto").classList.add("gone"); } catch {}
@@ -57,6 +61,7 @@ async function boot() {
   note();
   if (params.get("theme")) document.documentElement.dataset.theme = params.get("theme");
   if (params.get("sbs") === "0") { $("#sbs").checked = false; $("#arms").classList.add("single"); }
+  if (params.get("every") === "1") { $("#every").checked = true; $("#arms").classList.add("every"); }
   const t = location.hash.replace("#", "");
   if (t) showTab(t);
   if (params.get("autorun") === "1") runDay();
@@ -73,6 +78,9 @@ async function runDay() {
   const scenario = $("#scn").value, model = $("#model").value, source = $("#source").value;
   const modes = $("#sbs").checked ? ["observe", "enforce"] : ["enforce"];
   $("#go").disabled = true;
+  $("#outcome").hidden = true;
+  const s3 = $("#step3").getBoundingClientRect();           // bring the two sides into view as they start to fill
+  if (s3.top > innerHeight * 0.55) window.scrollTo({ top: scrollY + s3.top - 80, behavior: "smooth" });
   Object.values(ARMS).forEach((a) => a.es && a.es.close());
   modes.forEach(resetArm);
   let urls = {};
@@ -92,13 +100,36 @@ async function runDay() {
   for (const [md, url] of Object.entries(urls)) {
     const es = new EventSource(url);
     ARMS[md].es = es;
+    let ended = false;
+    const end = () => {
+      if (ended) return;
+      ended = true; es.close();
+      if (--open <= 0) { $("#go").disabled = false; showOutcome(modes); }
+    };
     es.onmessage = (m) => {
       const e = JSON.parse(m.data);
       render(md, e);
-      if (e.type === "done") { es.close(); if (--open <= 0) $("#go").disabled = false; }
+      if (e.type === "done") end();
     };
-    es.onerror = () => { es.close(); if (--open <= 0) $("#go").disabled = false; };
+    es.onerror = end;
   }
+}
+
+/* After a run: the answer in one plain line, and the way to Maya's phone when something is waiting for her. */
+async function showOutcome(modes) {
+  const off = modes.includes("observe") ? ARMS.observe.lost : null;
+  const on = modes.includes("enforce") ? ARMS.enforce.lost : 0;
+  let html;
+  if (!off && !on) html = `<span><b>No money left wrongly on either side today.</b></span>`;
+  else html = (off === null ? "" : `<span>Without Receipts: <b class="${off ? "bad" : ""}">${off ? usd(off) + " left Maya's business wrongly." : "no money left wrongly."}</b></span>`)
+    + `<span>With Receipts: <b class="${on ? "good" : ""}">${on ? usd(on) + " stopped before it reached PayPal." : "no money left wrongly."}</b></span>`;
+  await pollHolds();
+  const waiting = $("#holdCount").hidden ? 0 : Number($("#holdCount").textContent) || 0;
+  const box = $("#outcome");
+  box.innerHTML = html + (waiting ? `<button class="go" id="toPhone">Open Maya's phone (${waiting} waiting)</button>` : "");
+  box.hidden = false;
+  const tp = $("#toPhone");
+  if (tp) tp.addEventListener("click", () => showTab("owner"));
 }
 
 function add(mode, html) {
@@ -132,6 +163,7 @@ function txnSummary(args, r) {
   return `<b>Checked PayPal</b> · list_transactions · showing <b>${TS_WORD[st] || st}</b> payments only${dflt} · ${rows.length} found${invs.length ? ": " + invs.slice(-6).join(", ") : ""}`;
 }
 const MONEY = new Set(["create_payout", "create_refund", "accept_dispute_claim", "update_vendor_payee"]);
+const MINOR = new Set(["read_inbox", "list_vendors", "payments_book"]);   // housekeeping steps the plain view leaves out
 
 function moneyTitle(v) {
   const a = v.args || {};
@@ -141,23 +173,24 @@ function moneyTitle(v) {
   if (v.tool === "update_vendor_payee") return [`Change ${a.vendor}'s PayPal`, `to ${a.new_paypal_email}`];
   return [v.tool, ""];
 }
-const BADGE = { observe: { ALLOW: "WOULD ALLOW", HOLD: "WOULD HOLD", BLOCK: "WOULD STOP" }, enforce: { ALLOW: "SENT TO PAYPAL", HOLD: "HELD FOR OWNER", BLOCK: "STOPPED" } };
+const BADGE = { observe: { ALLOW: "RECEIPTS WOULD ALLOW", HOLD: "RECEIPTS WOULD HOLD", BLOCK: "RECEIPTS WOULD STOP" }, enforce: { ALLOW: "SENT TO PAYPAL", HOLD: "HELD FOR OWNER", BLOCK: "STOPPED" } };
 
 function render(mode, e) {
   const A = ARMS[mode];
   switch (e.type) {
-    case "session": A.session = e.session; $("#sub-" + mode).textContent = (mode === "observe" ? "Calls go straight to PayPal" : "Every money move checked first") + ` · PayPal ${e.backend}`;
+    case "session": A.session = e.session; $("#sub-" + mode).textContent = mode === "observe" ? "Nothing checks the AI's payments" : "Receipts checks PayPal before any money leaves";
+      $("#sub-" + mode).title = `PayPal ${e.backend}`;
       if (e.note) add(mode, `<div class="replay-tag">${esc(e.note)}</div>`);
       break;
     case "replay": add(mode, `<div class="replay-tag">Replay of a recorded ${esc(e.model)} run (${esc((e.recorded_at || "").replace("T", " ").replace("Z", " UTC"))}). The agent's words and calls are the recorded ones; Receipts and PayPal are running now.</div>`); break;
     case "say":
       if (e.where !== "reply") break;
       A.said.push(e.text);
-      add(mode, `<div class="say"><div class="avatar">AI</div><div class="bubble${e.text.length > 420 ? " long" : ""}">${e.marker ? `<span class="marker">SAID: ${e.marker === "REFUSED" ? "NO / SUSPICIOUS" : "WILL VERIFY / HOLD"}</span><br>` : ""}${esc(cleanText(e.text))}</div></div>`);
+      add(mode, `<div class="say"><div class="avatar">AI</div><div class="bubble${e.text.length > 420 ? " long" : ""}">${e.marker ? `<span class="marker">SAID: ${e.marker === "REFUSED" ? "NO / SUSPICIOUS" : "WILL VERIFY / HOLD"}</span>` : ""}<div class="txt">${esc(cleanText(e.text))}</div></div></div>`);
       break;
     case "call":
       if (MONEY.has(e.tool) || e.tool === "finish") break;
-      if (DESK_LABEL[e.tool]) add(mode, `<div class="act">› <b>${esc(DESK_LABEL[e.tool](e.args || {}))}</b></div>`);
+      if (DESK_LABEL[e.tool]) add(mode, `<div class="act${MINOR.has(e.tool) ? " minor" : ""}">› <b>${esc(DESK_LABEL[e.tool](e.args || {}))}</b></div>`);
       break;
     case "desk":
       if (e.tool === "call_vendor_on_file" && e.result && e.result.they_said) add(mode, `<div class="phone-said"><b>On the phone:</b> “${esc(e.result.they_said)}”</div>`);
@@ -170,7 +203,7 @@ function render(mode, e) {
       const [t, sub] = moneyTitle(e);
       const obs = e.mode === "observe";
       if (e.decision === "ALLOW") { A.pendingTitle = t; break; }
-      if (obs && e.decision !== "ALLOW") A.pendingBad = e.amount || 0;
+      if (obs && e.decision !== "ALLOW") { A.pendingBad = e.amount || 0; A.pendingTitle = t; }
       if (!obs && e.decision !== "ALLOW") { A.lost += e.amount || 0; $("#lost-" + mode).textContent = usd(A.lost); }
       const why = (e.findings || []).map((f) => `<li>${esc(f.why)}</li>`).join("");
       const saydo = e.words_class === "SAID_NO_DID_IT"
@@ -190,7 +223,9 @@ function render(mode, e) {
       const bad = A.pendingBad != null && ok;
       if (bad) { A.lost += A.pendingBad; $("#lost-" + mode).textContent = usd(A.lost); }
       const title = A.pendingTitle; A.pendingBad = null; A.pendingTitle = null;
-      add(mode, `<div class="pp${bad ? " moved-bad" : ""}"><span class="chk">${ok ? "✓" : "!"}</span><span>${bad ? "<b>Money moved</b> · " : title ? (mode === "observe" ? `${esc(title)} · ` : `<b class="cleared">Receipts: cleared</b> · ${esc(title)} · `) : ""}PayPal ${esc(e.backend)} · ${esc(e.tool)} · ${esc(id)} · ${esc(status)}</span></div>`);
+      const lead = bad ? ["<b>Money moved</b>", title && esc(title)] : title ? (mode === "observe" ? [esc(title)] : ['<b class="cleared">Receipts: cleared</b>', esc(title)]) : ["Sent to PayPal"];
+      const plain = lead.filter(Boolean).join(" · ");
+      add(mode, `<div class="pp${bad ? " moved-bad" : ""}"><span class="chk">${ok ? "✓" : "!"}</span><span>${plain}<span class="tech"> · PayPal ${esc(e.backend)} · ${esc(e.tool)} · ${esc(id)} · ${esc(status)}</span></span></div>`);
       break;
     }
     case "owner": add(mode, `<div class="act">› <b>Owner ${esc(e.action)} hold ${esc(e.hold_id)}</b></div>`); break;
@@ -209,7 +244,7 @@ function render(mode, e) {
         add(mode, `<div class="done">The run stopped before the day was worked${e.error ? ": " + esc(String(e.error).slice(0, 160)) : ""}.</div>`);
         break;
       }
-      add(mode, `<div class="done">Day finished${e.seconds ? " in " + e.seconds + "s" : ""}. Legitimate work done: ${o.legit_done ?? "?"} of ${o.legit_expected ?? "?"}. ${o.trap_attempts ? `Risky money moves tried: ${o.trap_attempts}.` : "No risky money move tried."}</div>`);
+      add(mode, `<div class="done">Day finished${e.seconds ? " in " + e.seconds + "s" : ""}. Honest work done: ${o.legit_done ?? "?"} of ${o.legit_expected ?? "?"}. ${o.trap_attempts ? `Risky money moves tried: ${o.trap_attempts}.` : "No risky money move tried."}</div>`);
       break;
     }
     case "error": add(mode, `<div class="err">${esc(e.msg)}</div>`); break;
@@ -224,6 +259,7 @@ function gapText(g) {
 }
 
 /* ---------- owner ---------- */
+const LOGO = `<svg viewBox="0 0 100 100" aria-hidden="true"><rect width="100" height="100" rx="22" fill="#14213d"/><path d="M26 84V16h21c15 0 24 8 24 21s-9 21-24 21H26m17 0l30 26" fill="none" stroke="#fffdf8" stroke-width="13" stroke-linecap="round" stroke-linejoin="round"/><path d="M55 70l12 12 26-28" fill="none" stroke="#1f9d55" stroke-width="13" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
 async function pollHolds() {
   let hs = [];
   try { hs = await (await fetch("/api/holds")).json(); } catch { return; }
@@ -237,7 +273,7 @@ async function pollHolds() {
   box.innerHTML = hs.map((h) => {
     const a = h.args || {};
     const ttl = h.tool === "create_payout" ? `Pay ${a.vendor}` : h.tool === "create_refund" ? "Refund a customer" : h.tool === "accept_dispute_claim" ? "Concede a dispute" : h.tool;
-    return `<div class="hold"><div class="ttl">${esc(ttl)} · ${esc(h.scenario)}</div><div class="amt">${usd(h.amount)}</div><ul>${(h.why || []).map((w) => `<li>${esc(w)}</li>`).join("")}</ul>${h.status === "WAITING"
+    return `<div class="hold"><div class="nt">${LOGO}<span>RECEIPTS</span><span class="when">${h.status === "WAITING" ? "needs you" : "done"}</span></div><div class="ttl">${esc(ttl)} · ${esc(h.scenario)}</div><div class="amt">${usd(h.amount)}</div><ul>${(h.why || []).map((w) => `<li>${esc(w)}</li>`).join("")}</ul>${h.status === "WAITING"
       ? `<div class="btns"><button class="approve" data-s="${h.session}" data-h="${h.id}">Approve</button><button class="decline" data-s="${h.session}" data-h="${h.id}">Decline</button></div>`
       : `<div class="state ${h.status}">${h.status === "APPROVED" ? `Approved · sent to PayPal ${esc((h.result || {}).backend || "")} · ${esc((h.result || {}).payout_batch_id || (h.result || {}).id || "")} · ${esc((h.result || {}).batch_status || (h.result || {}).status || "")}` : "Declined · never sent to PayPal"}</div>`}</div>`;
   }).join("");
