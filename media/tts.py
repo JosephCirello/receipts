@@ -1,8 +1,9 @@
 """Narration: one clip per scene, Microsoft Edge neural voice "Andrew" (edge-tts), with word timings.
 
-Run with the interpreter that has edge-tts installed:
-  C:\\Users\\joeci\\Desktop\\voice_check\\venv\\Scripts\\python.exe media/tts.py [scene_id ...]
-Writes media/build/vo/<scene>.mp3, <scene>.json (word timings) and durations.json.
+Run from the repository root with an interpreter that has edge-tts installed (pip install edge-tts; ffprobe on PATH):
+  python media/tts.py [scene_id ...]
+Every path is relative to this file: it reads media/script.json and writes media/build/vo/<scene>.mp3,
+<scene>.json (word timings) and durations.json.
 """
 import asyncio
 import json

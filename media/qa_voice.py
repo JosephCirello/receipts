@@ -1,5 +1,7 @@
 """Listen back: transcribe each narration clip and show it beside the script, to catch mispronunciations.
-Run with the voice venv:  C:\\Users\\joeci\\Desktop\\voice_check\\venv\\Scripts\\python.exe media/qa_voice.py [scene_id ...]"""
+Run from the repository root with an interpreter that has faster-whisper and numpy installed (ffmpeg on PATH):
+  python media/qa_voice.py [scene_id ...]
+Every path is relative to this file: it reads media/script.json and media/build/vo/<scene>.mp3."""
 import json
 import re
 import subprocess

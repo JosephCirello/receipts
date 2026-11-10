@@ -1,5 +1,6 @@
 # Receipts: one container, the web app, the MCP endpoint and PayPal's official MCP server.
-# Python and every library pinned to the versions the 44 tests and the recorded runs were checked with.
+# Python and every library pinned to the versions the tests and the recorded runs were checked with.
+# (Claude models in live runs also need `pip install anthropic`; live runs are off in this image by default.)
 FROM python:3.13-slim
 
 RUN apt-get update && apt-get install -y --no-install-recommends nodejs npm && rm -rf /var/lib/apt/lists/*
