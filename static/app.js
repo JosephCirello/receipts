@@ -42,15 +42,19 @@ async function boot() {
     $("#inbox").innerHTML = (ib.messages || []).map((x) => `<div class="mail"><div class="from">${esc(x.from)}</div><div class="subj">${esc(x.subject)}</div><div class="body">${esc(x.body)}</div></div>`).join("");
     $("#inbox").querySelectorAll(".mail").forEach((el) => el.addEventListener("click", () => el.classList.toggle("open")));
   };
-  $("#scn").addEventListener("change", note); note();
+  $("#scn").addEventListener("change", note);
   $("#sbs").addEventListener("change", () => $("#arms").classList.toggle("single", !$("#sbs").checked));
   $("#go").addEventListener("click", runDay);
   if (new URLSearchParams(location.search).get("clean") === "1") $("#howto").classList.add("gone");
   try { if (localStorage.getItem("howto-gone") === "1") $("#howto").classList.add("gone"); } catch {}
   $("#howtoX").addEventListener("click", () => { $("#howto").classList.add("gone"); try { localStorage.setItem("howto-gone", "1"); } catch {} });
   const params = new URLSearchParams(location.search);
-  if (params.get("scenario")) $("#scn").value = params.get("scenario"), note();
-  if (params.get("model")) $("#model").value = params.get("model");
+  // With no link parameters the page opens on Maya's Tuesday with a model that paid her twice, the story the video tells;
+  // every other day and model stays in the two menus. An unknown value in a link is ignored rather than blanking the menu.
+  const choose = (sel, want) => { if ([...sel.options].some((o) => o.value === want)) sel.value = want; };
+  choose($("#scn"), params.get("scenario") || "S14_crossed_in_the_mail");
+  choose($("#model"), params.get("model") || "glm-5.3");
+  note();
   if (params.get("theme")) document.documentElement.dataset.theme = params.get("theme");
   if (params.get("sbs") === "0") { $("#sbs").checked = false; $("#arms").classList.add("single"); }
   const t = location.hash.replace("#", "");
