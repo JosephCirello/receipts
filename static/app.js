@@ -283,6 +283,19 @@ const VIEWS = {
   words: (r) => r.said_first || WORDS.some((c) => codeSet(r).has(c)),
 };
 const VIEW_NAME = { all: "everything", held: "held-for-maya", stopped: "stopped", twice: "would-have-paid-twice", words: "agents-words" };
+// plain words on screen and in the accountant's download (the family test, 2026-11-10); the raw codes stay in the data
+const TOOL_LABEL = { create_payout: "Pay a supplier", create_refund: "Refund a customer", update_vendor_payee: "Change where a supplier is paid",
+  accept_dispute_claim: "Concede a dispute" };
+const CODE_LABEL = { PAYEE_NOT_ON_RECORD: "Payee not on record", ALREADY_PAID_IN_PAYPAL: "Already paid in PayPal",
+  PAYMENT_IN_FLIGHT: "A payment already on its way", ALREADY_PAID_OUTSIDE_PAYPAL: "Paid outside PayPal (check or transfer)",
+  NEAR_DUPLICATE_BILL: "Same bill, new number", REFUND_WHILE_DISPUTED: "Refund during an open dispute",
+  REFUND_MORE_THAN_PAID: "Refund more than the customer paid", PAYEE_CHANGE_WITHOUT_CALLBACK: "Payee change without a call",
+  OVER_OWNER_LIMIT: "Over the owner's limit", SPLIT_UNDER_LIMIT: "One bill split to slip under the limit",
+  DELIVERED_PER_TRACKING: "Dispute on a delivered parcel", APPROVAL_CLAIMED_NOT_ON_FILE: "Claimed an approval that isn't on file",
+  CLAIMED_CHECK_NOT_IN_LOG: "Claimed a phone check that isn't in the log", CALLBACK_SAID_NO: "The call said no",
+  NO_SUCH_CAPTURE: "No such payment in PayPal", NO_SUCH_DISPUTE: "No such dispute in PayPal", UNKNOWN_VENDOR: "Unknown supplier" };
+const codesPlain = (r) => [...codeSet(r)].map((c) => CODE_LABEL[c] || c).join("; ");
+const dayTitle = (id) => ((META && META.scenarios || []).find((s) => s.id === id) || {}).title || id;
 
 // the totals for exactly what is on screen: the summary strip and a pinned row under the grid
 function ledgerTotals() {
@@ -315,18 +328,21 @@ async function loadLedger() {
       columnDefs: [
         { field: "decision", headerName: "Receipts", cellRenderer: chip, width: 130, filter: true, pinned: "left", sort: "desc",
           comparator: (a, b) => ({ BLOCK: 2, HOLD: 1, ALLOW: 0 }[a] ?? -1) - ({ BLOCK: 2, HOLD: 1, ALLOW: 0 }[b] ?? -1) },
-        { field: "arm", width: 140, filter: true },
-        { field: "model", width: 230, filter: true },
-        { field: "scenario", headerName: "Day", width: 220, filter: true },
-        { field: "tool", width: 160, filter: true },
+        { colId: "arm", headerName: "Run", width: 140, filter: true,
+          valueGetter: (p) => (p.data && p.data.arm ? p.data.arm.replace("ON", "on").replace("OFF", "off") : "") },
+        { field: "model", headerName: "AI model", width: 230, filter: true },
+        { colId: "day", headerName: "Day", width: 230, filter: true, valueGetter: (p) => (p.data && p.data.scenario ? dayTitle(p.data.scenario) : "") },
+        { colId: "action", headerName: "What the AI tried", width: 220, filter: true,
+          valueGetter: (p) => (p.data && p.data.tool ? (TOOL_LABEL[p.data.tool] || p.data.tool) : "") },
         { field: "amount", width: 130, valueFormatter: (p) => usd(p.value), type: "rightAligned", filter: "agNumberColumnFilter" },
-        { field: "ref", headerName: "Invoice / capture / dispute", width: 200, filter: true },
-        { field: "to", headerName: "Payee", width: 240, filter: true },
-        { field: "codes", headerName: "Rule", width: 250, filter: true },
+        { field: "ref", headerName: "Invoice or order", width: 200, filter: true },
+        { field: "to", headerName: "Paid to", width: 240, filter: true },
+        { colId: "rule", headerName: "Rule", width: 280, filter: true, tooltipValueGetter: (p) => p.data && p.data.codes,
+          valueGetter: (p) => (p.data ? codesPlain(p.data) : "") },
         { field: "said_first", headerName: "Said no first", width: 130, cellRenderer: (p) => (p.value ? "⚠ yes" : "") },
         { field: "why", headerName: "Why (built from PayPal and the records)", flex: 1, minWidth: 380, tooltipField: "why", filter: true },
         { field: "paypal_id", headerName: "PayPal id", width: 170 },
-        { field: "backend", headerName: "PayPal", width: 110, filter: true },
+        { field: "backend", headerName: "PayPal", width: 110, filter: true, valueFormatter: (p) => (p.value === "standin" ? "stand-in" : p.value || "") },
       ],
       defaultColDef: { sortable: true, resizable: true, floatingFilter: true, suppressHeaderMenuButton: true },
       animateRows: true,
