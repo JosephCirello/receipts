@@ -47,6 +47,13 @@ def dur(p: Path) -> float:
     return float(r.stdout.strip())
 
 
+def frames(p: Path) -> int:
+    """How many pictures a segment holds."""
+    r = subprocess.run(["ffprobe", "-v", "error", "-select_streams", "v:0", "-count_packets", "-show_entries", "stream=nb_read_packets", "-of", "csv=p=0", str(p)],
+                       capture_output=True, text=True)
+    return int(r.stdout.strip().strip(","))
+
+
 def ass(lines, path: Path):
     """Captions for one scene: a list of (text, from second, to second)."""
     def ts(x):
@@ -163,22 +170,20 @@ def picture(v, d, i, tag):
 def main(only=()):
     plan = json.loads((HERE / "script.json").read_text(encoding="utf-8"))
     SEG.mkdir(parents=True, exist_ok=True)
-    listing, times, effects = [], [], []
+    times, effects = [], []
     t_total = 0.0
     for i, s in enumerate(plan["scenes"]):
         vo = B / "vo" / f"{s['id']}.mp3"
         lead, tail = float(s.get("lead", 0)), float(s.get("tail", 0))
         T = round(lead + dur(vo) + PAD + tail + (1.4 if i == len(plan["scenes"]) - 1 else 0), 2)
         out = f"seg_{i:02d}.mp4"
-        listing.append(f"file '{out}'")
         v = s["visual"]
         then = v.get("then")
-        marks = {"scene": s["id"], "start": round(t_total, 2), "length": T}
+        marks = {"scene": s["id"], "length": T, "lead": lead}               # times inside the scene; its start is filled in below
         for pv, at in ((v, 0.0), (then or {}, float((then or {}).get("at", 0)))):
             if pv.get("ring"):
-                marks.setdefault("rings", []).append({"from": round(t_total + at + pv["ring"]["at"], 2), "to": round(t_total + at + pv["ring"]["at"] + pv["ring"]["for"], 2)})
-        for e in s.get("sfx", []):
-            effects.append({"sound": e["sound"], "at": round(t_total + float(e["at"]), 3), "scene": s["id"]})
+                marks.setdefault("rings", []).append({"from": at + pv["ring"]["at"], "to": at + pv["ring"]["at"] + pv["ring"]["for"]})
+        marks["sfx"] = [{"sound": e["sound"], "at": float(e["at"])} for e in s.get("sfx", [])]
         times.append(marks)
         t_total += T
         if only and s["id"] not in only:            # python media/assemble.py <scene id ...>: recut only these scenes
@@ -205,11 +210,34 @@ def main(only=()):
                 "-map", "[v]", "-map", "[a]", "-c:v", "libx264", "-preset", "medium", "-crf", "19", "-pix_fmt", "yuv420p",
                 "-r", str(FPS), "-c:a", "aac", "-b:a", "192k", "-ar", "48000", "-ac", "2", "-t", f"{T}", out]
         run(cmd)
-        print(f"{i:02d} {s['id']:9s} starts {t_total - T:6.2f}s  {T:5.2f}s  total {t_total:6.2f}s", flush=True)
-    (SEG / "list.txt").write_text("\n".join(listing) + "\n", encoding="utf-8")
-    (B / "timings.json").write_text(json.dumps({"scenes": times, "sfx": effects}, indent=1), encoding="utf-8")
+        print(f"{i:02d} {s['id']:9s} cut ({T:5.2f}s)", flush=True)
+    # The picture: the segments' frames laid end to end, so a scene starts exactly where the one before it ends.
+    counts = [frames(SEG / f"seg_{i:02d}.mp4") for i in range(len(times))]
+    starts = [sum(counts[:i]) / FPS for i in range(len(counts))]
+    total = sum(counts) / FPS
+    (SEG / "list.txt").write_text("".join(f"file 'seg_{i:02d}.mp4'\nduration {c / FPS:.6f}\n" for i, c in enumerate(counts)), encoding="utf-8")
+    picture_only = B / "receipts_demo_picture.mp4"
+    run(["ffmpeg", "-y", "-v", "error", "-f", "concat", "-safe", "0", "-i", "list.txt", "-map", "0:v", "-c", "copy", str(picture_only)])
+    # The narration: one sound track for the whole video, each line laid at its scene's start (plus its lead), to the
+    # sample. Joining the segments' own sound tracks instead lets the voice slip later at every join, by the padding
+    # an AAC track carries at each end: about 25 ms a scene, close to half a second by the end of a three-minute cut.
+    cmd, fc = ["ffmpeg", "-y", "-v", "error", "-i", str(picture_only)], []
+    for k, (s, tm) in enumerate(zip(plan["scenes"], times), 1):
+        cmd += ["-i", str(B / "vo" / f"{s['id']}.mp3")]
+        fc.append(f"[{k}:a]aformat=sample_rates=48000:channel_layouts=stereo,adelay={int(round((starts[k - 1] + tm['lead']) * 48000))}S:all=1[n{k}]")
+    fc.append("".join(f"[n{k}]" for k in range(1, len(times) + 1))
+              + f"amix=inputs={len(times)}:duration=longest:dropout_transition=0:normalize=0,apad,atrim=duration={total:.6f}[a]")
     final = B / "receipts_demo.mp4"
-    run(["ffmpeg", "-y", "-v", "error", "-f", "concat", "-safe", "0", "-i", "list.txt", "-c", "copy", "-movflags", "+faststart", str(final)])
+    run(cmd + ["-filter_complex", ";".join(fc), "-map", "0:v", "-map", "[a]", "-c:v", "copy", "-c:a", "aac", "-b:a", "192k", "-ar", "48000", "-ac", "2",
+               "-movflags", "+faststart", str(final)])
+    picture_only.unlink()
+    for tm, st in zip(times, starts):                                       # where everything falls in the finished video
+        tm["start"] = round(st, 3)
+        for r in tm.get("rings", []):
+            r["from"], r["to"] = round(st + r["from"], 2), round(st + r["to"], 2)
+        effects += [{"sound": e["sound"], "at": round(st + e["at"], 3), "scene": tm["scene"]} for e in tm.pop("sfx")]
+        print(f"{tm['scene']:9s} starts {st:7.2f}s  {tm['length']:5.2f}s", flush=True)
+    (B / "timings.json").write_text(json.dumps({"scenes": times, "sfx": effects}, indent=1), encoding="utf-8")
     print(f"wrote {final}  ({dur(final):.1f}s)")
     music = HERE / "music" / "bed.mp3"          # provenance in media/music/SOURCE.md
     if music.exists():
