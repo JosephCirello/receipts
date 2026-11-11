@@ -194,6 +194,10 @@ flowchart LR
 - **Receipts is itself an MCP server.** Point any MCP client at `http://localhost:8090/mcp/` instead of at PayPal's MCP server: the same PayPal tool names plus the payments book, every money move checked first, holds on the owner's phone. The MCP workspace is one workspace shared by every MCP client, so on a public server its holds stay off the web phone (`RECEIPTS_MCP_ON_PHONE=0`, set in the Docker image); the `receipts_holds` tool lists them either way.
 - **Every visitor has their own state.** The web app keeps held payments, runs, rules and the reset per visitor, under a random id in a cookie, so one visitor of the hosted demo never sees or changes another's. The recorded runs and Maya's book are read-only and shared.
 
+![PayPal's own sandbox log of five calls Receipts made on 9 November 2026: two payouts created (201), one payout read back (200), and two transaction searches (200)](media/screenshots/paypal_sandbox_api_calls.png)
+
+*PayPal's record, not ours: the sandbox API call log in PayPal's developer dashboard, 9 November 2026. Payouts created, a payout read back, and Transaction Search.*
+
 ## Run it (two minutes, no keys)
 
 ```bash
