@@ -253,9 +253,14 @@ run_batch.py   the measurement      regrade.py   re-score from recordings      r
 tests/         86 tests             examples/    MCP client demo               media/     the video pipeline
 ```
 
+## Sponsor tools
+
+- **AG Grid (Community).** Maya's book and both results tables (`static/app.js`). The one-tap views (*Held for Maya*, *Stopped*, *Would have paid twice*) are AG Grid's external filter, layered with a floating filter under every column and the quick-filter search. The totals strip and a pinned bottom row are recomputed from exactly the rows that pass the filters. *Download for the accountant* is AG Grid's CSV export of the filtered, sorted view, with every reason.
+- **Render.** The hosted demo at https://receipts-4nvn.onrender.com runs on Render's free plan, deployed from this repo's `render.yaml` Blueprint and `Dockerfile`. It runs on the PayPal stand-in with live model runs switched off, and the recorded runs are read once and cached, so all 2,401 moves in Maya's book load quickly on a small instance.
+
 ## Built with
 
-PayPal MCP server (`@paypal/mcp`) · PayPal Payouts API · PayPal Orders, Captures, Refunds and Transaction Search APIs · Vultr Serverless Inference (12 open models) · Anthropic, OpenAI and xAI APIs (7 frontier models) · AG Grid Community · FastAPI · Model Context Protocol Python SDK · Playwright and Microsoft Edge neural voice for the video.
+PayPal MCP server (`@paypal/mcp`) · PayPal Payouts API · PayPal Orders, Captures, Refunds and Transaction Search APIs · Vultr Serverless Inference (12 open models) · Anthropic, OpenAI and xAI APIs (7 frontier models) · AG Grid Community · Render · Docker · FastAPI · Model Context Protocol Python SDK · Playwright and Microsoft Edge neural voice for the video.
 
 License: MIT.
 
