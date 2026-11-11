@@ -10,7 +10,7 @@ A guide for the judges of the PayPal AI Hackathon. Nothing on this page needs an
 4. Open **Her book**, tap **Would have paid twice**, and press **Download for the accountant**.
 5. Open **Results**: what 19 AI models did with Maya's bills over 19 business days, first with nothing checking them and then with Receipts.
 
-Prefer to watch? [The video is 2 minutes 54 seconds](https://youtu.be/vLFWDG3o_xA). The hosted demo replays the recorded runs on our stand-in for PayPal; the video shows the same runs on PayPal's real sandbox.
+Prefer to watch? [The video is 2 minutes 54 seconds](https://youtu.be/vLFWDG3o_xA). Prefer to read? [The video in words](VIDEO.md) has everything shown and said, scene by scene. The hosted demo replays the recorded runs on our stand-in for PayPal; the video shows the same runs on PayPal's real sandbox.
 
 ## 2. The five judging criteria, and where each one shows
 

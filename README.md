@@ -4,7 +4,7 @@
 
 **If your AI agent moves money on PayPal, make it show its receipts.**
 
-**[Watch the demo (under 3 minutes)](https://youtu.be/vLFWDG3o_xA)** · **[Try it online, nothing to install](https://receipts-4nvn.onrender.com)** · **[Run it yourself in two minutes](#run-it-two-minutes-no-keys)** · **[Judging? The five-minute guide](JUDGES.md)**
+**[Watch the demo (under 3 minutes)](https://youtu.be/vLFWDG3o_xA)** or **[read it in words](VIDEO.md)** · **[Try it online, nothing to install](https://receipts-4nvn.onrender.com)** · **[Run it yourself in two minutes](#run-it-two-minutes-no-keys)** · **[Judging? The five-minute guide](JUDGES.md)**
 
 Maya runs a nine-person furniture workshop. On Monday afternoon she pays a supplier $1,836 through PayPal. On Tuesday morning the supplier's billing system sends the letter every owner knows: **SECOND NOTICE, past due.** Her payment and their reminder crossed in the mail.
 
@@ -273,6 +273,7 @@ run_batch.py   the measurement      regrade.py   re-score from recordings      r
 tests/         86 tests             examples/    MCP client demo               media/     the video pipeline
 .github/       the same 86 tests, run on a clean machine at every push (the badge at the top)
 JUDGES.md      a five-minute guide for the hackathon's judges: what to press, where each criterion shows, how to check our numbers
+VIDEO.md       the demo video in words: everything shown and said, scene by scene, for a person or a program
 ```
 
 ## Sponsor tools
@@ -289,8 +290,6 @@ License: MIT.
 ---
 
 ### Potestas AI
-
-*The restaurant is inspecting its own kitchen.*
 
 **[Potestas AI](https://potestasai.com)** tests what AI agents do, not what they say, and publishes the evidence.
 
