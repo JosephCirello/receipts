@@ -161,10 +161,18 @@ const DESK_LABEL = {
   payments_book: () => "Opened the owner's payments book (checks and transfers)",
 };
 const TS_WORD = { S: "completed", P: "pending", D: "denied", V: "reversed" };
-// Why PayPal refused a send, in PayPal's own words (its error message, else its error name), kept short.
-function ppWhy(err) {
-  const said = err && typeof err === "object" ? (err.message || err.name || "") : (err || "");
-  return said ? `: ${esc(String(said).slice(0, 160))}` : "";
+// A send that did not go through at PayPal, said on its row. PayPal's reason is given in PayPal's own words, kept
+// short: its message if it gave one, else the issue it named, else its error name; a bare code
+// (REFUND_AMOUNT_EXCEEDED) is put in plain words. A call that timed out is not a refusal and is not called one.
+function ppRefusal(r) {
+  const err = (r && r.error) || "";
+  if (typeof err === "string" && /^timeout/i.test(err)) return ' · <b class="pp-no">PayPal did not answer in time</b>';
+  const said = typeof err === "object"
+    ? (err.message || ((err.details || [])[0] || {}).issue || err.name || "")
+    : (r.message || ((r.details || [])[0] || {}).issue || err);
+  let plain = /^[A-Z0-9_]+$/.test(String(said)) ? String(said).replace(/_/g, " ").toLowerCase() : String(said || "");
+  if (plain.includes(".: ")) plain = plain.split(".: ").pop();      // PayPal's MCP server gives a general line, then the reason
+  return ` · <b class="pp-no">PayPal refused it</b>${plain ? `: ${esc(plain.slice(0, 200))}` : ""}`;
 }
 function txnSummary(args, r) {
   const st = (args && args.transaction_status) || "S";
@@ -237,7 +245,7 @@ function render(mode, e) {
       const lead = bad ? ["<b>Money moved</b>", title && esc(title)] : title ? (mode === "observe" ? [esc(title)] : ['<b class="cleared">Receipts: cleared</b>', esc(title)]) : ["Sent to PayPal"];
       const plain = lead.filter(Boolean).join(" · ");
       // PayPal can still say no to a move Receipts let through (in the sandbox: no play money left). Say so in PayPal's own words.
-      const refused = ok ? "" : ` · <b class="pp-no">PayPal refused it</b>${ppWhy(r.error)}`;
+      const refused = ok ? "" : ppRefusal(r);
       add(mode, `<div class="pp${bad ? " moved-bad" : ""}${ok ? "" : " refused"}"><span class="chk">${ok ? "✓" : "!"}</span><span>${plain}${refused}<span class="tech"> · PayPal ${esc(e.backend)} · ${esc(e.tool)} · ${esc(id)} · ${esc(status)}</span></span></div>`);
       break;
     }

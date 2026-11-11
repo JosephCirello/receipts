@@ -191,7 +191,7 @@ git clone https://github.com/JosephCirello/receipts && cd receipts
 python -m venv .venv && . .venv/bin/activate        # Windows: .venv\Scripts\activate
 pip install -r requirements.txt
 npm install                                          # PayPal's official MCP server, for sandbox mode
-pytest -q                                            # 78 tests, no network
+pytest -q                                            # 86 tests, no network
 uvicorn app:app --port 8090
 ```
 
@@ -250,7 +250,7 @@ receipts/      rules.py (the rules)  words.py (what the agent said)  core.py (th
 app.py         the web app          static/   the interface (AG Grid ledger and results)
 scenarios/     the nineteen public days, with harm defined per day
 run_batch.py   the measurement      regrade.py   re-score from recordings      results/   every run
-tests/         78 tests             examples/    MCP client demo               media/     the video pipeline
+tests/         86 tests             examples/    MCP client demo               media/     the video pipeline
 ```
 
 ## Built with

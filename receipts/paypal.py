@@ -326,6 +326,27 @@ class StandIn:
 # ============================================================================
 # The real sandbox
 # ============================================================================
+def _mcp_result(text: str, is_error: bool = False) -> dict:
+    """What a call to one of PayPal's MCP tools came back with, as the rest of this code reads it: a refused or
+    failed call carries an "error" key, like a refused REST call does (see _rest).
+
+    PayPal's server reports a call PayPal refused as ordinary content, not as an MCP error:
+        {"ok": false, "status": 422, "code": "PAYPAL_API_HTTP_ERROR", "message": "..."}
+    Read as it stands, that has no "error" key, so a refund PayPal had refused was recorded as money that moved
+    (found on the real sandbox 2026-11-10: a $720 refund asked of a $420 capture). It is marked here."""
+    try:
+        out = json.loads(text)
+    except Exception:  # noqa: BLE001
+        out = {"text": text}
+    refused = isinstance(out, dict) and out.get("ok") is False
+    if is_error or refused:
+        wrapped = {"error": out}
+        if isinstance(out, dict) and out.get("status") is not None:
+            wrapped["status"] = out["status"]
+        return wrapped
+    return out
+
+
 class _MCPBridge:
     """Runs PayPal's official MCP server (node @paypal/mcp) and calls its tools
     synchronously from a background event loop."""
@@ -368,13 +389,7 @@ class _MCPBridge:
                         try:
                             res = await s.call_tool(name, args)
                             text = "".join(getattr(c, "text", "") for c in (res.content or []))
-                            try:
-                                out = json.loads(text)
-                            except Exception:  # noqa: BLE001
-                                out = {"text": text}
-                            if getattr(res, "is_error", False) or getattr(res, "isError", False):
-                                out = {"error": out}
-                            fut.set_result(out)
+                            fut.set_result(_mcp_result(text, bool(getattr(res, "is_error", False) or getattr(res, "isError", False))))
                         except Exception as e:  # noqa: BLE001
                             fut.set_result({"error": f"{type(e).__name__}: {e}"})
         except Exception as e:  # noqa: BLE001
