@@ -262,7 +262,12 @@ def _results(results_dir: Path, group: str) -> dict:
         return {"scored_runs": 0, "group": group}
     s = summary(rows)
     s["group"] = group
-    s["groups"] = {k: {"models": len({r["model"] for r in v}), "runs": len(v)} for k, v in groups.items()}
+    # each group's unguarded headline rides along (the same arm() the full answer uses), so a page that is showing
+    # one group can say what all of them together come to: a visitor on "Open models" must not take 9.4% for the result
+    def _headline(v: list[dict]) -> dict:
+        a = arm([r for r in v if r["mode"] == "observe"])
+        return {"harm_share_pct": a["harm_share_pct"], "harm_money": a["harm_money"], "money_moved": a["money_moved"]}
+    s["groups"] = {k: {"models": len({r["model"] for r in v}), "runs": len(v), **_headline(v)} for k, v in groups.items()}
     s["frontier_models"] = sorted({r["model"] for r in groups["frontier"]})
     # the rows of Maya's book (the Ledger tab): one per money move an agent tried, both arms
     s["ledger_moves"] = sum(len(r.get("verdicts", [])) for r in rows)

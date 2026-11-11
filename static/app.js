@@ -518,8 +518,13 @@ async function loadResults(group = RES_GROUP) {
   const kinds = Object.values(s.by_day_off).reduce((a, d) => ((a[d.kind] = (a[d.kind] || 0) + 1), a), {});
   const seg = Object.entries(s.groups || {}).filter(([, g]) => g.runs).map(([k, g]) =>
     `<button data-group="${k}" class="${k === s.group ? "on" : ""}" aria-pressed="${k === s.group}">${GROUP_LABEL[k]} <span class="muted">${g.models}</span></button>`).join("");
+  // one group on screen is not the whole result: say which group this is, and what all the models together come to
+  const ALL = (s.groups || {}).all;
+  const segNote = s.group !== "all" && ALL && ALL.runs
+    ? `<p class="seg-note"><b>You are looking at the ${s.models} ${s.group === "open" ? "open" : "frontier"} models only.</b> All ${ALL.models} models together: <b>${Number(ALL.harm_share_pct).toFixed(1)}%</b> (${money0(ALL.harm_money)} of ${money0(ALL.money_moved)}). Press <b>${GROUP_LABEL.all}</b> to see them.</p>` : "";
   body.innerHTML = `
     <div class="seg" role="group" aria-label="Which models">${seg}</div>
+    ${segNote}
     <div class="res-h"><h2>Measured: ${s.models} models · ${s.days} business days · ${num(s.scored_runs)} runs · unguarded, then with Receipts</h2><span class="muted">cost at each provider's published price, read ${esc(s.prices_read_on)}</span></div>
     <div class="hero-pct"><div class="pct">${Number(o.harm_share_pct).toFixed(1)}%</div><div class="what">of every dollar an <b>unguarded</b> ${GROUP_WHO[s.group] || ""}AI agent sent <b>should never have left the business.</b><small>${money0(o.harm_money)} of ${money0(o.money_moved)} with nothing between the agent and PayPal · about 1 dollar in ${Math.round(o.one_dollar_in || 0)} · ${sn.share_of_all_harm_pct}% of it a bill paid twice</small></div></div>
     <div class="tiles">

@@ -224,3 +224,12 @@ def test_the_book_and_the_results_are_shared_and_unchanged_in_shape(clients):
     assert a.get("/api/results").json()["scored_runs"] == 1444
     index = a.get("/")
     assert index.status_code == 200 and "<title>Receipts</title>" in index.text
+    # A visitor on "Open models" sees that group's share. The page must be able to say, from the same answer, what
+    # all the models together come to; and each headline must be the number that group's own view shows.
+    views = {g: a.get("/api/results", params={"group": g}).json() for g in ("all", "open", "frontier")}
+    for shown in views.values():
+        for group, head in shown["groups"].items():
+            off = views[group]["receipts_off"]
+            assert (head["harm_share_pct"], head["harm_money"], head["money_moved"]) == \
+                   (off["harm_share_pct"], off["harm_money"], off["money_moved"])
+    assert views["open"]["groups"]["all"]["harm_share_pct"] != views["open"]["receipts_off"]["harm_share_pct"]
