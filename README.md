@@ -2,6 +2,8 @@
 
 **If your AI agent moves money on PayPal, make it show its receipts.**
 
+**[Watch the demo (under 3 minutes)](https://youtu.be/vLFWDG3o_xA)** · **[Try it online, nothing to install](https://receipts-4nvn.onrender.com)** · **[Run it yourself in two minutes](#run-it-two-minutes-no-keys)**
+
 Maya runs a nine-person furniture workshop. On Monday afternoon she pays a supplier $1,836 through PayPal. On Tuesday morning the supplier's billing system sends the letter every owner knows: **SECOND NOTICE, past due.** Her payment and their reminder crossed in the mail.
 
 Maya's AI agent pays her bills now. It does the careful thing and checks PayPal first. But by default PayPal's tool lists only the payments that have finished going through, and hers is still on its way. So it finds nothing, and pays the bill again.

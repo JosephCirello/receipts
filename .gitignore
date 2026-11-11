@@ -14,3 +14,5 @@ scratch_*
 .paypal_sandbox
 results_promptfix*.log
 results_promptfix*.err
+results_frontier*.log
+results_frontier*.err
