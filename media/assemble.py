@@ -8,7 +8,7 @@ viewer to switch on. With "burn_captions": true each scene's short "caption" is 
                                       # media/build/slides and media/build/rings (record.py slides, record.py rings)
 
 Takes are sped up (never slowed below real time) to fit the narration, then hold on
-their last frame. Cards get a slow push-in. Output: media/build/receipts_demo.mp4 (voice and music),
+their last frame. Cards are held still (no push-in: see picture()). Output: media/build/receipts_demo.mp4 (voice and music),
 and media/build/receipts_demo_sfx.mp4, the same pictures with the two sound effects of media/sfx laid in.
 The last step of the mix is one plain gain on the whole sound track (master(), below).
 
@@ -105,13 +105,19 @@ def eased(keys, value):
 
 
 def camera(fo, d):
-    """The zoompan filter for a take's focus (the take is 3840x2160 by then; the picture out is 1920x1080).
-    Between keys it is the frame's edges that move evenly, so a push-in does not lurch at its start."""
+    """The camera on a take (the take is 3840x2160 by then; the picture out is 1920x1080).
+    Between keys it is the frame's edges that move evenly, so a push-in does not lurch at its start.
+    The frame is placed with the perspective filter, to a fraction of a pixel, and brought down to size once.
+    (zoompan, used until 2026-11-10, puts its frame on whole pixels, and on even ones for this kind of picture:
+    measured on a large screen, a camera move landed with a shake of a pixel or two.)"""
     if "keys" in fo:
         w = eased(fo["keys"], lambda k: 1 / k[1])            # the width of the frame, as a share of the page
         cx, cy = eased(fo["keys"], lambda k: k[2]), eased(fo["keys"], lambda k: k[3])
-        return (f",zoompan=z='1/({w})':x='max(0,min(iw-iw/zoom,({cx})*iw/1920-iw/zoom/2))'"
-                f":y='max(0,min(ih-ih/zoom,({cy})*ih/1080-ih/zoom/2))':d=1:s=1920x1080:fps={FPS}")
+        x0 = f"max(0,min(W-W*({w}),({cx})*W/1920-W*({w})/2))"          # the frame's left and top edges on the take,
+        y0 = f"max(0,min(H-H*({w}),({cy})*H/1080-H*({w})/2))"          # kept inside the page
+        x1, y1 = f"({x0})+W*({w})", f"({y0})+H*({w})"
+        return (f",perspective=x0='{x0}':y0='{y0}':x1='{x1}':y1='{y0}':x2='{x0}':y2='{y1}':x3='{x1}':y3='{y1}'"
+                f":sense=source:interpolation=cubic:eval=frame,scale=1920:1080:flags=lanczos")
     n0, z = int(fo["from"] * d * FPS), fo["zoom"]
     step = (z - 1) / max(1, int(0.35 * d * FPS))
     zexpr = f"{z}" if fo.get("still") else f"if(lt(on,{n0}),1,min(1+(on-{n0})*{step:.5f},{z}))"   # still: a fixed crop, no push-in
@@ -152,7 +158,12 @@ def picture(v, d, i, tag):
     else:
         src = B / "slides" / f"{v['slide']}.png"
         ins += ["-loop", "1", "-framerate", str(FPS), "-t", f"{d + 0.2:.2f}", "-i", str(src)]
-        chains.append(f"[{i}:v]scale=3840:2160,trim=duration={d + 0.1:.2f},setpts=PTS-STARTPTS[b{tag}0]")
+        if not (v.get("mask") or inset or ring):
+            # A plain card is held still and shown as it was rendered (1920x1080), pixel for pixel. Cards used to
+            # get a slow push-in through zoompan, which places its frame on whole pixels: on a large screen the
+            # words crept and snapped back most of a pixel, two or three times a second (measured 2026-11-10).
+            return ins, [f"[{i}:v]scale=1920:1080:flags=lanczos,trim=duration={d},setpts=PTS-STARTPTS[p{tag}]"], 1
+        chains.append(f"[{i}:v]scale=3840:2160:flags=lanczos,trim=duration={d + 0.1:.2f},setpts=PTS-STARTPTS[b{tag}0]")
     used, layer = 1, 0
     if v.get("mask"):
         x, y, w, h = (int(round(c * 2)) for c in v["mask"]["keep"])
@@ -183,9 +194,9 @@ def picture(v, d, i, tag):
         cam = camera(fo, d)[1:] if fo else "scale=1920:1080:flags=lanczos"
         chains.append(f"[b{tag}{layer}]{cam},trim=duration={d},setpts=PTS-STARTPTS[p{tag}]")
     else:
-        frames = int(d * FPS)
-        chains.append(f"[b{tag}{layer}]zoompan=z='1+0.035*on/{frames}':x='iw/2-(iw/zoom/2)':y='ih/2-(ih/zoom/2)':d=1:s=1920x1080:fps={FPS},"
-                      f"trim=duration={d},setpts=PTS-STARTPTS[p{tag}]")
+        # a card with something laid on it (a strip of a take, a ring) is built at twice the size and brought down
+        # once, and it is held still too
+        chains.append(f"[b{tag}{layer}]scale=1920:1080:flags=lanczos,trim=duration={d},setpts=PTS-STARTPTS[p{tag}]")
     return ins, chains, used
 
 
@@ -231,7 +242,9 @@ def main(only=()):
         chains.append(f"{joined}concat=n={len(parts)}:v=1:a=0,{draw}[v]" if len(parts) > 1 else f"[p0]{draw}[v]")
         late = f"adelay={int(lead * 1000)}:all=1," if lead else ""
         chains.append(f"[{n}:a]{late}apad,atrim=duration={T},asetpts=PTS-STARTPTS[a]")
-        cmd += ["-i", str(vo), "-filter_complex", ";".join(chains),
+        graph = f"fc_{i:02d}.txt"                   # the filter graph goes in a file: a camera with several keys is long
+        (SEG / graph).write_text(";".join(chains), encoding="utf-8")
+        cmd += ["-i", str(vo), "-/filter_complex", graph,
                 "-map", "[v]", "-map", "[a]", "-c:v", "libx264", "-preset", "medium", "-crf", "19", "-pix_fmt", "yuv420p",
                 "-r", str(FPS), "-c:a", "aac", "-b:a", "192k", "-ar", "48000", "-ac", "2", "-t", f"{T}", out]
         run(cmd)
