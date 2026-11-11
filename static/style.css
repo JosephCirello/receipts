@@ -367,6 +367,8 @@ h3.sub { margin-top: 20px; }
 .viz-root .tip { position: absolute; z-index: 5; background: var(--card); color: var(--ink); border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; font-size: 13px; line-height: 1.45; box-shadow: var(--shadow); max-width: 330px; pointer-events: none; }
 #dayGrid { height: 560px; margin-top: 12px; }
 @media (max-width: 900px) { .hero-pct { flex-direction: column; align-items: flex-start; gap: 8px; } .hero-pct .pct { font-size: 60px; } }
+/* on a phone the seven-column table is wider than the screen: it slides inside its own card, so the page itself never does */
+.plain-scroll { overflow-x: auto; }
 table.plain { border-collapse: collapse; width: 100%; max-width: 1060px; font-size: 13.5px; margin: 6px 0 10px; }
 table.plain th, table.plain td { text-align: right; padding: 6px 10px; border-bottom: 1px solid var(--line); font-variant-numeric: tabular-nums; }
 table.plain th:first-child, table.plain td:first-child { text-align: left; }
