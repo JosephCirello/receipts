@@ -25,7 +25,7 @@ We gave 19 AI models Maya's bills for 19 business days, first with nothing check
 - **On Maya's Tuesday, 61% of runs paid her twice** (23 of 38). Every run that also asked PayPal for payments still on their way found hers and did not pay again (15 of 15).
 - **With Receipts, $0.00 left wrongly, for every model.** And being careful cost nothing: **98% of honest payments and refunds went straight through** (1,038 of 1,064), and **Receipts wrongly stopped none.**
 
-- **Watch the demo (under 3 minutes):** _link added at submission_
+- **Watch the demo (under 3 minutes):** **https://youtu.be/vLFWDG3o_xA**
 - **Try it online, nothing to install:** **https://receipts-4nvn.onrender.com**. [Open Maya's Tuesday](https://receipts-4nvn.onrender.com/?scenario=S14_crossed_in_the_mail&model=glm-5.3) and press **Run the day**: the left side pays her twice, the right side holds it for her. It replays real recorded runs through Receipts on the PayPal stand-in (the video shows the same runs on PayPal's real sandbox). The free host sleeps when nobody is using it, so the first visit can take about a minute.
 - **Run it yourself:** on your own computer in two minutes with no accounts or keys ([Run it](#run-it-two-minutes-no-keys)), or point it at your own PayPal sandbox.
 
