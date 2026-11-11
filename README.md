@@ -4,7 +4,7 @@
 
 **If your AI agent moves money on PayPal, make it show its receipts.**
 
-**[Watch the demo (under 3 minutes)](https://youtu.be/vLFWDG3o_xA)** · **[Try it online, nothing to install](https://receipts-4nvn.onrender.com)** · **[Run it yourself in two minutes](#run-it-two-minutes-no-keys)**
+**[Watch the demo (under 3 minutes)](https://youtu.be/vLFWDG3o_xA)** · **[Try it online, nothing to install](https://receipts-4nvn.onrender.com)** · **[Run it yourself in two minutes](#run-it-two-minutes-no-keys)** · **[Judging? The five-minute guide](JUDGES.md)**
 
 Maya runs a nine-person furniture workshop. On Monday afternoon she pays a supplier $1,836 through PayPal. On Tuesday morning the supplier's billing system sends the letter every owner knows: **SECOND NOTICE, past due.** Her payment and their reminder crossed in the mail.
 
@@ -18,7 +18,9 @@ Maya's AI agent pays her bills now. It does the careful thing and checks PayPal 
 
 > The agent reads the email. Receipts reads PayPal.
 
-![Same AI, same inbox: on the left, with nothing checking it, it pays a bill whose payment is still on its way; on the right, Receipts holds it for the owner](media/screenshots/sbs_s14.png)
+![Without Receipts, $1,836.00 left Maya's business wrongly; with Receipts it was stopped before it reached PayPal. Maya opens the card on her phone, taps Decline, and the payment is never sent.](media/screenshots/held_then_declined.gif)
+
+*Thirteen seconds from [the video](https://youtu.be/vLFWDG3o_xA): the second payment is stopped, and Maya declines it on her phone.*
 
 **On this page:** [What we found](#what-we-found) · [Maya's Tuesday](#mayas-tuesday-run-38-times) · [What we measured](#what-we-measured) · [Why it matters](#why-it-matters-beyond-maya) · [What Receipts checks](#what-receipts-checks) · [How it works](#how-it-works) · [Run it](#run-it-two-minutes-no-keys) · [How it was measured](#how-it-was-measured) · [Honest limits](#honest-limits)
 
@@ -38,6 +40,8 @@ We gave 19 AI models Maya's bills for 19 business days, first with nothing check
 ---
 
 ## Maya's Tuesday, run 38 times
+
+![Same AI, same inbox: on the left, with nothing checking it, it pays a bill whose payment is still on its way; on the right, Receipts holds it for the owner](media/screenshots/sbs_s14.png)
 
 We ran Maya's Tuesday 38 times, across 19 AI models (two runs each), with nothing between the agent and PayPal:
 
@@ -264,6 +268,7 @@ scenarios/     the nineteen public days, with harm defined per day
 run_batch.py   the measurement      regrade.py   re-score from recordings      results/   every run
 tests/         86 tests             examples/    MCP client demo               media/     the video pipeline
 .github/       the same 86 tests, run on a clean machine at every push (the badge at the top)
+JUDGES.md      a five-minute guide for the hackathon's judges: what to press, where each criterion shows, how to check our numbers
 ```
 
 ## Sponsor tools
