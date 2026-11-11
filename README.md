@@ -1,5 +1,7 @@
 # Receipts
 
+[![tests](https://github.com/JosephCirello/receipts/actions/workflows/tests.yml/badge.svg)](https://github.com/JosephCirello/receipts/actions/workflows/tests.yml) [![PayPal AI Hackathon: our entry on Devpost](https://img.shields.io/badge/PayPal%20AI%20Hackathon-our%20entry%20on%20Devpost-1f6feb.svg)](https://devpost.com/software/receipts-yjs4tg) [![license: MIT](https://img.shields.io/badge/license-MIT-lightgrey.svg)](LICENSE)
+
 **If your AI agent moves money on PayPal, make it show its receipts.**
 
 **[Watch the demo (under 3 minutes)](https://youtu.be/vLFWDG3o_xA)** · **[Try it online, nothing to install](https://receipts-4nvn.onrender.com)** · **[Run it yourself in two minutes](#run-it-two-minutes-no-keys)**
@@ -18,6 +20,8 @@ Maya's AI agent pays her bills now. It does the careful thing and checks PayPal 
 
 ![Same AI, same inbox: on the left, with nothing checking it, it pays a bill whose payment is still on its way; on the right, Receipts holds it for the owner](media/screenshots/sbs_s14.png)
 
+**On this page:** [What we found](#what-we-found) · [Maya's Tuesday](#mayas-tuesday-run-38-times) · [What we measured](#what-we-measured) · [Why it matters](#why-it-matters-beyond-maya) · [What Receipts checks](#what-receipts-checks) · [How it works](#how-it-works) · [Run it](#run-it-two-minutes-no-keys) · [How it was measured](#how-it-was-measured) · [Honest limits](#honest-limits)
+
 ## What we found
 
 We gave 19 AI models Maya's bills for 19 business days, first with nothing checking them and then with Receipts: 1,444 runs.
@@ -28,7 +32,7 @@ We gave 19 AI models Maya's bills for 19 business days, first with nothing check
 - **With Receipts, $0.00 left wrongly, for every model.** And being careful cost nothing: **98% of honest payments and refunds went straight through** (1,038 of 1,064), and **Receipts wrongly stopped none.**
 
 - **Watch the demo (under 3 minutes):** **https://youtu.be/vLFWDG3o_xA**
-- **Try it online, nothing to install:** **https://receipts-4nvn.onrender.com**. [Open Maya's Tuesday](https://receipts-4nvn.onrender.com/?scenario=S14_crossed_in_the_mail&model=glm-5.3) and press **Run the day**: the left side pays her twice, the right side holds it for her. It replays real recorded runs through Receipts on the PayPal stand-in (the video shows the same runs on PayPal's real sandbox). The free host sleeps when nobody is using it, so the first visit can take about a minute.
+- **Try it online, nothing to install:** **https://receipts-4nvn.onrender.com**. [Open Maya's Tuesday](https://receipts-4nvn.onrender.com/?scenario=S14_crossed_in_the_mail&model=glm-5.3) and press **Run the day**: the left side pays her twice, the right side holds it for her. It replays real recorded runs through Receipts on the PayPal stand-in (the video shows the same runs on PayPal's real sandbox).
 - **Run it yourself:** on your own computer in two minutes with no accounts or keys ([Run it](#run-it-two-minutes-no-keys)), or point it at your own PayPal sandbox.
 
 ---
@@ -201,6 +205,12 @@ Open http://localhost:8090. **Watch** replays recorded real runs of any of the 1
 
 Three minutes for a judge: it opens on Maya's Tuesday (*Crossed in the mail*). Press *Run the day*, watch the left side pay twice and the right side hold, then press *Open Maya's phone* and tap *Decline*.
 
+### Your own copy on Render, in one click
+
+[![Deploy to Render](https://render.com/images/deploy-to-render-button.svg)](https://render.com/deploy?repo=https://github.com/JosephCirello/receipts)
+
+The button reads this repo's `render.yaml` Blueprint and `Dockerfile` and puts the same demo in your own Render account, on Render's free plan: the PayPal stand-in, the recorded runs, no keys.
+
 ### With your PayPal sandbox
 
 1. At [developer.paypal.com](https://developer.paypal.com/) create a sandbox app (Payouts and card payments enabled) and copy its client id and secret.
@@ -253,12 +263,13 @@ app.py         the web app          static/   the interface (AG Grid ledger and 
 scenarios/     the nineteen public days, with harm defined per day
 run_batch.py   the measurement      regrade.py   re-score from recordings      results/   every run
 tests/         86 tests             examples/    MCP client demo               media/     the video pipeline
+.github/       the same 86 tests, run on a clean machine at every push (the badge at the top)
 ```
 
 ## Sponsor tools
 
 - **AG Grid (Community).** Maya's book and both results tables (`static/app.js`). The one-tap views (*Held for Maya*, *Stopped*, *Would have paid twice*) are AG Grid's external filter, layered with a floating filter under every column and the quick-filter search. The totals strip and a pinned bottom row are recomputed from exactly the rows that pass the filters. *Download for the accountant* is AG Grid's CSV export of the filtered, sorted view, with every reason.
-- **Render.** The hosted demo at https://receipts-4nvn.onrender.com runs on Render's free plan, deployed from this repo's `render.yaml` Blueprint and `Dockerfile`. It runs on the PayPal stand-in with live model runs switched off, and the recorded runs are read once and cached, so all 2,401 moves in Maya's book load quickly on a small instance.
+- **Render.** The hosted demo at https://receipts-4nvn.onrender.com runs on Render, deployed from this repo's `render.yaml` Blueprint and `Dockerfile`. The Blueprint asks for Render's free plan, so anyone can deploy a copy at no cost; ours runs on a small paid instance so that it is awake when a judge opens it. It runs on the PayPal stand-in with live model runs switched off, and the recorded runs are read once and cached, so all 2,401 moves in Maya's book load quickly on a small instance.
 
 ## Built with
 
