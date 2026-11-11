@@ -161,6 +161,11 @@ const DESK_LABEL = {
   payments_book: () => "Opened the owner's payments book (checks and transfers)",
 };
 const TS_WORD = { S: "completed", P: "pending", D: "denied", V: "reversed" };
+// Why PayPal refused a send, in PayPal's own words (its error message, else its error name), kept short.
+function ppWhy(err) {
+  const said = err && typeof err === "object" ? (err.message || err.name || "") : (err || "");
+  return said ? `: ${esc(String(said).slice(0, 160))}` : "";
+}
 function txnSummary(args, r) {
   const st = (args && args.transaction_status) || "S";
   const rows = (r && r.transaction_details) || [];
@@ -231,7 +236,9 @@ function render(mode, e) {
       const title = A.pendingTitle; A.pendingBad = null; A.pendingTitle = null;
       const lead = bad ? ["<b>Money moved</b>", title && esc(title)] : title ? (mode === "observe" ? [esc(title)] : ['<b class="cleared">Receipts: cleared</b>', esc(title)]) : ["Sent to PayPal"];
       const plain = lead.filter(Boolean).join(" · ");
-      add(mode, `<div class="pp${bad ? " moved-bad" : ""}"><span class="chk">${ok ? "✓" : "!"}</span><span>${plain}<span class="tech"> · PayPal ${esc(e.backend)} · ${esc(e.tool)} · ${esc(id)} · ${esc(status)}</span></span></div>`);
+      // PayPal can still say no to a move Receipts let through (in the sandbox: no play money left). Say so in PayPal's own words.
+      const refused = ok ? "" : ` · <b class="pp-no">PayPal refused it</b>${ppWhy(r.error)}`;
+      add(mode, `<div class="pp${bad ? " moved-bad" : ""}${ok ? "" : " refused"}"><span class="chk">${ok ? "✓" : "!"}</span><span>${plain}${refused}<span class="tech"> · PayPal ${esc(e.backend)} · ${esc(e.tool)} · ${esc(id)} · ${esc(status)}</span></span></div>`);
       break;
     }
     case "owner": add(mode, `<div class="act">› <b>Owner ${esc(e.action)} hold ${esc(e.hold_id)}</b></div>`); break;

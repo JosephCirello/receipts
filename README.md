@@ -205,7 +205,7 @@ Three minutes for a judge: it opens on Maya's Tuesday (*Crossed in the mail*). P
 2. `export PAYPAL_CLIENT_ID=... PAYPAL_CLIENT_SECRET=... PAYPAL_MODE=sandbox` (or put the two values on two lines of `~/.paypal_sandbox`).
 3. Restart the app. The badge reads *PayPal sandbox*, and every allowed move appears in your sandbox account.
 
-Sandbox notes: a seeded payout to an address with no sandbox account comes back UNCLAIMED, which is exactly a payment still on its way, so Maya's Tuesday runs for real. PayPal's sandbox cannot open a buyer dispute or fail a payout on request, so the dispute day and the bounced-payment day run on the stand-in in every mode, and say so on screen.
+Sandbox notes: a seeded payout to an address with no sandbox account comes back UNCLAIMED, which is exactly a payment still on its way, so Maya's Tuesday runs for real. PayPal's sandbox cannot open a buyer dispute or fail a payout on request, so the dispute day and the bounced-payment day run on the stand-in in every mode, and say so on screen. Every sandbox day sends real sandbox payouts, so the sandbox business account needs play money: when it runs out PayPal answers `INSUFFICIENT_FUNDS`, and the row for that payment says *PayPal refused it* with PayPal's own reason (it happened to ours after two days of recording). PayPal's [Sandbox accounts](https://developer.paypal.com/sandbox-testing/accounts) page shows how to create or duplicate a business account with a larger balance.
 
 ### Live model runs
 

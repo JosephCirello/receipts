@@ -127,6 +127,10 @@ h2 { font-size: 18px; margin: 0 0 10px; letter-spacing: -.01em; }
 .pp.moved-bad b { color: var(--bad); font-family: Inter; }
 .pp.moved-bad {background: var(--bad-bg); border-color: color-mix(in srgb, var(--bad) 40%, var(--line)); }
 .pp.moved-bad .chk { background: var(--bad); }
+/* PayPal itself refused a move Receipts let through: never a green mark on a payment that did not go */
+.pp.refused { background: var(--hold-bg); border-color: color-mix(in srgb, var(--hold) 40%, var(--line)); align-items: flex-start; }
+.pp.refused .chk { background: var(--hold); }
+.pp .pp-no { color: var(--hold); font-family: Inter; }
 
 .report { margin-left: 38px; border-radius: 12px; border: 2px solid var(--line); padding: 12px 14px; background: var(--paper); }
 .report.match { border-color: color-mix(in srgb, var(--ok) 50%, var(--line)); }
